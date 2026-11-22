@@ -1,0 +1,81 @@
+:root {
+  --bg: #faf6ef;
+  --surface: #ffffff;
+  --ink: #33302a;
+  --muted: #7a7264;
+  --accent: #8a5a2b;
+  --accent-soft: #f0e4d3;
+  --line: #e5dcc9;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  line-height: 1.8;
+  font-size: 16px;
+}
+a { color: var(--accent); }
+.wrap { max-width: 880px; margin: 0 auto; padding: 0 16px; }
+header.site {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+header.site .wrap {
+  display: flex; align-items: baseline; gap: 16px;
+  padding-top: 18px; padding-bottom: 18px; flex-wrap: wrap;
+}
+.logo { font-size: 26px; font-weight: 700; color: var(--ink); text-decoration: none; letter-spacing: .05em; }
+.tagline { color: var(--muted); font-size: 13px; }
+.pr-note {
+  background: var(--accent-soft); color: var(--accent);
+  font-size: 12px; text-align: center; padding: 6px 12px;
+}
+nav.cats { background: var(--surface); border-bottom: 1px solid var(--line); }
+nav.cats .wrap { display: flex; gap: 20px; padding-top: 10px; padding-bottom: 10px; flex-wrap: wrap; }
+nav.cats a { color: var(--ink); text-decoration: none; font-size: 14px; }
+nav.cats a:hover { color: var(--accent); }
+main { padding: 32px 0 48px; }
+.hero {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  padding: 28px 24px; margin-bottom: 28px;
+}
+.hero h1 { font-size: 24px; margin: 0 0 10px; line-height: 1.5; }
+.hero p { margin: 0; color: var(--muted); }
+h2.sec { font-size: 19px; border-left: 5px solid var(--accent); padding-left: 10px; margin: 34px 0 16px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+.card {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  padding: 18px; text-decoration: none; color: var(--ink); display: block;
+}
+.card:hover { border-color: var(--accent); }
+.card .cat { font-size: 12px; color: var(--accent); font-weight: 700; }
+.card h3 { font-size: 17px; margin: 6px 0 8px; line-height: 1.5; }
+.card p { font-size: 13px; color: var(--muted); margin: 0; }
+.card .soon { color: var(--muted); font-size: 13px; }
+article.post {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  padding: 28px 24px;
+}
+article.post h1 { font-size: 25px; line-height: 1.5; margin: 4px 0 6px; }
+article.post .meta { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+article.post h2 { font-size: 20px; border-bottom: 2px solid var(--accent-soft); padding-bottom: 6px; margin: 30px 0 12px; }
+article.post h3 { font-size: 17px; margin: 22px 0 8px; }
+article.post ul, article.post ol { padding-left: 22px; }
+.toolbox {
+  background: var(--bg); border: 1px dashed var(--accent); border-radius: 10px;
+  padding: 16px 18px; margin: 18px 0;
+}
+.toolbox h3 { margin-top: 0; }
+.aff {
+  display: block; background: var(--accent-soft); border-radius: 8px;
+  padding: 10px 14px; margin: 8px 0; text-decoration: none; color: var(--ink); font-size: 14px;
+}
+.aff .pr { font-size: 11px; color: var(--accent); font-weight: 700; display: block; }
+footer.site {
+  border-top: 1px solid var(--line); background: var(--surface);
+  padding: 24px 0 40px; color: var(--muted); font-size: 13px;
+}
+footer.site .wrap { display: flex; gap: 20px; flex-wrap: wrap; }
+footer.site a { color: var(--muted); }
