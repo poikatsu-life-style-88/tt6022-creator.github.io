@@ -161,7 +161,7 @@ footer{margin-top:18px;font-size:.75rem;color:var(--muted);text-align:center}
             <div class="pos">SB<small>サイドバック</small></div>
             <div class="tiername" id="tierName">🥉 ブロンズ</div>
           </div>
-          <div class="face" aria-hidden="true">
+          <div class="face" id="cardFace" aria-hidden="true">
             <svg width="110" height="110" viewBox="0 0 100 100"><circle cx="50" cy="26" r="14" fill="#fff" opacity=".95"/><path d="M50 42c-14 0-22 10-24 26l-3 18h14l5-16v24h16V70l5 16h14l-3-18c-2-16-10-26-24-26z" fill="#fff" opacity=".95"/><circle cx="82" cy="80" r="10" fill="#17251b"/><path d="M82 70a10 10 0 010 20M74 76h16M76 86l6-12 6 12" stroke="#fff" stroke-width="1.6" fill="none"/></svg>
           </div>
           <div class="pname" id="cardName">MY PLAYER</div>
@@ -169,9 +169,12 @@ footer{margin-top:18px;font-size:.75rem;color:var(--muted);text-align:center}
           <div class="abilities" id="abilities"></div>
         </div>
         <div class="evo" id="evo"></div>
-        <p class="note" style="margin-top:10px">名前は下のボタンで変えられるよ。写真カードは家族と相談してから作ろう。</p>
+        <p class="note" style="margin-top:10px">名前と写真は下のボタンで変えられるよ。写真はこの端末の中だけに保存されて、外部に送られることはないよ。切り抜き写真（背景が透明なもの）を使うと、ポスターみたいにかっこよくなるよ。</p>
         <div class="actions">
           <button class="btn sub" id="renameBtn" type="button">✏️ 名前を変える</button>
+          <label class="btn sub" for="photoIn">📷 写真を変える</label>
+          <input type="file" id="photoIn" accept="image/*">
+          <button class="btn sub" id="photoDel" type="button" style="display:none">写真を消す</button>
         </div>
         <div id="renameBox" style="display:none;margin-top:10px">
           <div class="mrow"><label for="nameInput">カードの名前</label><input id="nameInput" type="text" maxlength="12" placeholder="例）TAKERU"></div>
@@ -297,7 +300,7 @@ var BADGES = [
   {id:"b_gold", icon:"🥇", name:"ゴールド進化", desc:"カードがゴールドに", test:function(s){return s.totalPt>=800;}}
 ];
 
-var state = { name:"MY PLAYER", totalPt:0, ab:{}, days:{}, measures:[], target:0 };
+var state = { name:"MY PLAYER", totalPt:0, ab:{}, days:{}, measures:[], target:0, photo:"" };
 ABILITIES.forEach(function(a){ state.ab[a.id]=0; });
 
 /* 永続保存：この端末のブラウザに自動保存し、ページを閉じても翌日続きから再開できる */
@@ -312,6 +315,7 @@ try {
       state.days = ps.days || {};
       state.measures = ps.measures || [];
       state.target = ps.target || 0;
+      if (typeof ps.photo === "string") state.photo = ps.photo;
       ABILITIES.forEach(function(a){ state.ab[a.id] = (ps.ab && ps.ab[a.id]) || 0; });
     }
   }
@@ -391,12 +395,25 @@ function nextTierNote(){
   for(var i=0;i<TIERS.length;i++){ if(state.totalPt<TIERS[i].min) return "あと"+(TIERS[i].min-state.totalPt)+"pt"; }
   return "最大進化に到達！";
 }
+var FACE_SVG = '<svg width="110" height="110" viewBox="0 0 100 100"><circle cx="50" cy="26" r="14" fill="#fff" opacity=".95"/><path d="M50 42c-14 0-22 10-24 26l-3 18h14l5-16v24h16V70l5 16h14l-3-18c-2-16-10-26-24-26z" fill="#fff" opacity=".95"/><circle cx="82" cy="80" r="10" fill="#17251b"/><path d="M82 70a10 10 0 010 20M74 76h16M76 86l6-12 6 12" stroke="#fff" stroke-width="1.6" fill="none"/></svg>';
 function renderCard(){
   var t=tierOf(state.totalPt), card=$("pcard");
   card.className="pcard "+t.cls;
   $("tierName").textContent=t.name;
   $("cardStage").textContent=t.stage;
   $("cardName").textContent=state.name;
+  var face=$("cardFace");
+  if(state.photo){
+    face.innerHTML="";
+    var img=document.createElement("img");
+    img.src=state.photo; img.alt="選手の写真";
+    img.style.cssText="height:118px;max-width:150px;object-fit:contain;border-radius:14px;filter:drop-shadow(0 4px 10px rgba(0,0,0,.35))";
+    face.appendChild(img);
+    $("photoDel").style.display="";
+  } else {
+    face.innerHTML=FACE_SVG;
+    $("photoDel").style.display="none";
+  }
   var box=$("abilities"); box.innerHTML="";
   ABILITIES.forEach(function(a){
     var v=state.ab[a.id]||0;
@@ -496,6 +513,30 @@ $("mSave").addEventListener("click",function(){
 });
 $("renameBtn").addEventListener("click",function(){ var b=$("renameBox"); b.style.display=b.style.display==="none"?"block":"none"; });
 $("nameSave").addEventListener("click",function(){ var v=$("nameInput").value.trim(); if(v){ state.name=v.toUpperCase(); } $("renameBox").style.display="none"; renderAll(); toast("カードの名前を変えたよ"); });
+
+/* 写真：端末内で縮小して保存（外部送信なし）。切り抜きPNGは透明のまま、通常写真はJPEGにする */
+$("photoIn").addEventListener("change",function(ev){
+  var f=ev.target.files[0]; if(!f) return;
+  var rd=new FileReader();
+  rd.onload=function(){
+    var img=new Image();
+    img.onload=function(){
+      try{
+        var MAX=480, sc=Math.min(1, MAX/Math.max(img.width,img.height));
+        var cv=document.createElement("canvas");
+        cv.width=Math.round(img.width*sc); cv.height=Math.round(img.height*sc);
+        cv.getContext("2d").drawImage(img,0,0,cv.width,cv.height);
+        state.photo = (f.type==="image/png") ? cv.toDataURL("image/png") : cv.toDataURL("image/jpeg",0.85);
+        renderAll();
+        toast("写真をカードにセットしたよ！");
+      }catch(e){ toast("写真の読み込みに失敗したよ"); }
+    };
+    img.src=rd.result;
+  };
+  rd.readAsDataURL(f);
+  ev.target.value="";
+});
+$("photoDel").addEventListener("click",function(){ state.photo=""; renderAll(); toast("写真を消したよ"); });
 
 function toCSV(){
   var lines=["type,date,practice,study,rest,pt,side,dash,jump,name,target"];
