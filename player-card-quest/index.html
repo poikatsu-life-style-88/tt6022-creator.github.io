@@ -46,11 +46,12 @@ h1{font-size:1.35rem;margin:6px 0 2px;letter-spacing:.02em}
 /* player card */
 .pcard{border-radius:16px;padding:16px;color:#fff;position:relative;overflow:hidden;min-height:300px;display:flex;flex-direction:column;transition:background .4s}
 .pcard::after{content:"";position:absolute;inset:auto -30px -60px auto;width:190px;height:190px;border-radius:50%;background:rgba(255,255,255,.14)}
-.tier-bronze{background:linear-gradient(150deg,#6f4423,#b57a44 60%,#8a5a33)}
-.tier-silver{background:linear-gradient(150deg,#5d6b78,#aebbc7 55%,#7d8b99)}
-.tier-gold{background:linear-gradient(150deg,#8a6108,#e8b62a 55%,#b8860b)}
-.tier-diamond{background:linear-gradient(150deg,#0e5f74,#39b6cf 55%,#12748e)}
-.tier-legend{background:linear-gradient(150deg,#3d0d5e,#8b2fc9 45%,#e03a7a)}
+.tier-bronze{background:linear-gradient(150deg,#14532d,#22c55e 60%,#166534)}
+.tier-silver{background:linear-gradient(150deg,#1e3a5f,#3b82c4 55%,#1d4e79)}
+.tier-gold{background:linear-gradient(150deg,#0a1e3f,#1b4f9c 55%,#c8102e)}
+.tier-diamond{background:linear-gradient(150deg,#7f1d1d,#dc2626 55%,#991b1b)}
+.tier-legend{background:linear-gradient(150deg,#171717,#4c1d95 55%,#b8860b)}
+.tier-ballon{background:linear-gradient(150deg,#92600a,#f5c542 45%,#fff3b0 70%,#d4a017)}
 .pcard .row1{display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:1}
 .pcard .pos{font-weight:900;font-size:1.6rem;line-height:1}
 .pcard .pos small{display:block;font-size:.68rem;font-weight:700;opacity:.85;letter-spacing:.08em}
@@ -159,14 +160,14 @@ footer{margin-top:18px;font-size:.75rem;color:var(--muted);text-align:center}
         <div class="pcard tier-bronze" id="pcard">
           <div class="row1">
             <div class="pos">SB<small>サイドバック</small></div>
-            <div class="tiername" id="tierName">🥉 ブロンズ</div>
+            <div class="tiername" id="tierName">🏠 地元クラブ</div>
           </div>
           <div id="cardEmblem" style="position:absolute;top:56px;right:14px;font-size:1.8rem;z-index:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))"></div>
           <div class="face" id="cardFace" aria-hidden="true">
             <svg width="110" height="110" viewBox="0 0 100 100"><circle cx="50" cy="26" r="14" fill="#fff" opacity=".95"/><path d="M50 42c-14 0-22 10-24 26l-3 18h14l5-16v24h16V70l5 16h14l-3-18c-2-16-10-26-24-26z" fill="#fff" opacity=".95"/><circle cx="82" cy="80" r="10" fill="#17251b"/><path d="M82 70a10 10 0 010 20M74 76h16M76 86l6-12 6 12" stroke="#fff" stroke-width="1.6" fill="none"/></svg>
           </div>
           <div class="pname" id="cardName">MY PLAYER</div>
-          <div class="pteam" id="cardStage">舞台：近所の公園</div>
+          <div class="pteam" id="cardStage">所属：地元のクラブチーム</div>
           <div class="abilities" id="abilities"></div>
         </div>
         <div class="evo" id="evo"></div>
@@ -290,11 +291,12 @@ var QUESTS = [
   {id:"q_jigaku", type:"study", icon:"📖", name:"自学ノート 1ページ以上", desc:"漢字・計算・英語・読書メモなど、自分で決めた勉強", pt:30, ab:"study"}
 ];
 var TIERS = [
-  {min:0, name:"🥉 ブロンズ", cls:"tier-bronze", stage:"舞台：近所の公園"},
-  {min:400, name:"🥈 シルバー", cls:"tier-silver", stage:"舞台：地区のグラウンド"},
-  {min:1200, name:"🥇 ゴールド", cls:"tier-gold", stage:"舞台：県大会のスタジアム"},
-  {min:3000, name:"💎 ダイヤ", cls:"tier-diamond", stage:"舞台：全国大会のピッチ"},
-  {min:6000, name:"👑 レジェンド", cls:"tier-legend", stage:"舞台：ワールドクラスのスタジアム"}
+  {min:0, name:"🏠 地元クラブ", cls:"tier-bronze", stage:"所属：地元のクラブチーム"},
+  {min:500, name:"💪 強豪クラブ", cls:"tier-silver", stage:"所属：県内の強豪クラブチーム"},
+  {min:1500, name:"🇯🇵 日本代表", cls:"tier-gold", stage:"所属：日本代表（日の丸を背負ってプレー）"},
+  {min:3000, name:"✈️ 海外クラブ", cls:"tier-diamond", stage:"所属：海外クラブチーム"},
+  {min:5000, name:"🌍 海外強豪クラブ", cls:"tier-legend", stage:"所属：海外の強豪クラブチーム"},
+  {min:8000, name:"🏆 バロンドール", cls:"tier-ballon", stage:"世界最高の選手に贈られる称号"}
 ];
 var BADGES = [
   {id:"b_first", icon:"🌱", name:"はじめの一歩", desc:"初クエスト達成", test:function(s){return s.totalPt>0;}},
@@ -303,8 +305,10 @@ var BADGES = [
   {id:"b_7", icon:"🏆", name:"7日連続", desc:"連続7日記録", test:function(s){return streakOf(s)>=7;}},
   {id:"b_week", icon:"📆", name:"週目標クリア", desc:"週5日達成", test:function(s){return s.weekClearedEver || weekDone(s)>=5;}},
   {id:"b_measure", icon:"📏", name:"測定デビュー", desc:"測定を1回記録", test:function(s){return s.measures.length>=1;}},
-  {id:"b_silver", icon:"🥈", name:"シルバー進化", desc:"カードがシルバーに", test:function(s){return s.totalPt>=400;}},
-  {id:"b_gold", icon:"🥇", name:"ゴールド進化", desc:"カードがゴールドに", test:function(s){return s.totalPt>=1200;}},
+  {id:"b_silver", icon:"💪", name:"強豪クラブ昇格", desc:"500pt到達", test:function(s){return s.totalPt>=500;}},
+  {id:"b_gold", icon:"🇯🇵", name:"日本代表選出", desc:"1,500pt到達", test:function(s){return s.totalPt>=1500;}},
+  {id:"b_oversea", icon:"✈️", name:"海外挑戦", desc:"3,000pt到達", test:function(s){return s.totalPt>=3000;}},
+  {id:"b_ballon", icon:"🏆", name:"バロンドール", desc:"8,000pt到達", test:function(s){return s.totalPt>=8000;}},
   {id:"b_item", icon:"🎁", name:"はじめてのアイテム", desc:"スターでアイテムをゲット", test:function(s){return (s.items||[]).length>=1;}},
   {id:"b_combo", icon:"💥", name:"コンボ達成", desc:"自主練＋自学を同じ日に両方", test:function(s){return Object.keys(s.days).some(function(k){return s.days[k].combo;});}}
 ];
@@ -410,7 +414,7 @@ function completeQuest(q){
   var chest=grantChestIfNeeded();
   renderAll();
   var bonusNote = chest ? " 週目標クリアのごほうびチェストで ⭐+2！" : "";
-  if(afterTier!==beforeTier){ showModal("✨","カードが進化した！", "選手カードが "+afterTier+" になったよ。"+tierOf(state.totalPt).stage+" へ！"+bonusNote); }
+  if(afterTier!==beforeTier){ showModal("✨","ステージアップ！", afterTier+" に上がったよ！ "+tierOf(state.totalPt).stage+bonusNote); }
   else if(afterLv>beforeLv){ showModal("🎉","レベルアップ！", "Lv."+afterLv+" になったよ。ごほうびに ⭐+"+lvStars+" ゲット！"+bonusNote); }
   else if(combo){ showModal("💥","コンボボーナス！", "自主練＋自学の両方クリアで +20pt ボーナス！"+bonusNote); }
   else if(chest){ showModal("🎁","週目標クリア！", "今週5日達成！ごほうびチェストで ⭐+2 ゲット。アイテムと交換できるよ！"); }
