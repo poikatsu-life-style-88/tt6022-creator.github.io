@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="color-scheme" content="light dark" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="選手カードクエスト" />
+<link rel="icon" href="data:," />
+<title>自主練・自学 選手カードアプリ</title>
+<style>
+:root{
+  --bg:#f2f5ef; --surface:#ffffff; --surface2:#e9efe3; --ink:#17251b; --muted:#5b6b5e;
+  --line:#d5ddcf; --green:#1d9e57; --green-d:#14703d; --blue:#2563eb; --gold:#e8a812; --gold-bg:#fdf3d3;
+  --rest:#9aa79c; --accent:#ffcf3f; --danger:#d64545;
+  --card-bronze1:#8a5a33; --card-bronze2:#c98d54;
+  --shadow:0 10px 28px rgba(20,40,25,.12);
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#10160f; --surface:#1a241a; --surface2:#232f23; --ink:#eef4ec; --muted:#a7b8a6; --line:#334233; --gold-bg:#3a3312; --shadow:0 10px 28px rgba(0,0,0,.45); }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN","Hiragino Sans","Noto Sans JP",system-ui,sans-serif;line-height:1.55}
+button,[role="button"],select,input:not([type="checkbox"]){min-height:44px}
+button{font:inherit;cursor:pointer}
+.wrap{max-width:880px;margin:0 auto;padding:14px 14px 40px}
+h1{font-size:1.35rem;margin:6px 0 2px;letter-spacing:.02em}
+.sub{color:var(--muted);font-size:.9rem;margin:0 0 14px}
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 8px;text-align:center}
+.stat b{display:block;font-size:1.35rem;line-height:1.15}
+.stat span{font-size:.72rem;color:var(--muted);font-weight:700;letter-spacing:.04em}
+.xpbar{height:12px;background:var(--surface2);border-radius:99px;overflow:hidden;margin:6px 0 4px;border:1px solid var(--line)}
+.xpbar i{display:block;height:100%;background:linear-gradient(90deg,var(--green),#57c785);width:0%;transition:width .5s}
+.xpnote{font-size:.82rem;color:var(--muted);margin:0 0 14px}
+/* layout */
+.grid{display:grid;grid-template-columns:1fr;gap:16px}
+@media(min-width:760px){.grid{grid-template-columns:340px 1fr}}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
+.panel h2{font-size:1.05rem;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+.panel h2 .tag{font-size:.68rem;background:var(--surface2);border:1px solid var(--line);padding:2px 8px;border-radius:99px;color:var(--muted)}
+/* player card */
+.pcard{border-radius:16px;padding:16px;color:#fff;position:relative;overflow:hidden;min-height:300px;display:flex;flex-direction:column;transition:background .4s}
+.pcard::after{content:"";position:absolute;inset:auto -30px -60px auto;width:190px;height:190px;border-radius:50%;background:rgba(255,255,255,.14)}
+.tier-bronze{background:linear-gradient(150deg,#6f4423,#b57a44 60%,#8a5a33)}
+.tier-silver{background:linear-gradient(150deg,#5d6b78,#aebbc7 55%,#7d8b99)}
+.tier-gold{background:linear-gradient(150deg,#8a6108,#e8b62a 55%,#b8860b)}
+.tier-diamond{background:linear-gradient(150deg,#0e5f74,#39b6cf 55%,#12748e)}
+.tier-legend{background:linear-gradient(150deg,#3d0d5e,#8b2fc9 45%,#e03a7a)}
+.pcard .row1{display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:1}
+.pcard .pos{font-weight:900;font-size:1.6rem;line-height:1}
+.pcard .pos small{display:block;font-size:.68rem;font-weight:700;opacity:.85;letter-spacing:.08em}
+.pcard .tiername{font-weight:900;background:rgba(0,0,0,.28);padding:5px 10px;border-radius:99px;font-size:.8rem}
+.pcard .face{display:flex;justify-content:center;padding:8px 0 2px;position:relative;z-index:1}
+.pcard .pname{text-align:center;font-weight:900;font-size:1.25rem;letter-spacing:.06em;position:relative;z-index:1}
+.pcard .pteam{text-align:center;font-size:.78rem;opacity:.9;position:relative;z-index:1}
+.abilities{margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:7px 14px;position:relative;z-index:1}
+.ab{font-size:.8rem}
+.ab .top{display:flex;justify-content:space-between;font-weight:700}
+.ab .rank{font-weight:900;color:var(--accent)}
+.ab .bar{height:7px;background:rgba(0,0,0,.3);border-radius:99px;overflow:hidden;margin-top:3px}
+.ab .bar i{display:block;height:100%;background:#fff;width:0%;transition:width .5s}
+.evo{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap}
+.evo span{flex:1;min-width:56px;text-align:center;font-size:.7rem;font-weight:800;padding:7px 2px;border-radius:9px;background:var(--surface2);color:var(--muted);border:1px solid var(--line)}
+.evo span.on{background:var(--gold-bg);color:var(--ink);border-color:var(--gold)}
+.evo span small{display:block;font-weight:600;font-size:.62rem}
+/* quests */
+.quest{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:10px;background:var(--surface)}
+.quest.done{opacity:.75;border-color:var(--green);background:color-mix(in srgb,var(--green) 8%, var(--surface))}
+.quest .ic{font-size:1.5rem;line-height:1.2}
+.quest .body{flex:1;min-width:0}
+.quest .body b{display:block;font-size:.98rem}
+.quest .body p{margin:2px 0 0;font-size:.82rem;color:var(--muted)}
+.quest .pt{font-weight:900;color:var(--green-d);white-space:nowrap;font-size:.9rem}
+@media (prefers-color-scheme: dark){.quest .pt{color:#6fd598}}
+.quest button{border:0;border-radius:11px;padding:10px 14px;font-weight:900;background:var(--green);color:#fff;min-width:92px}
+.quest button:disabled{background:var(--rest);color:#fff}
+.quest.study button{background:var(--blue)}
+.sec-label{font-size:.78rem;font-weight:900;letter-spacing:.06em;color:var(--muted);margin:14px 0 8px}
+.sec-label:first-of-type{margin-top:0}
+.restbtn{width:100%;border:2px dashed var(--rest);background:transparent;color:var(--muted);border-radius:12px;font-weight:800;padding:12px}
+.restbtn.on{background:var(--surface2);color:var(--ink);border-style:solid}
+/* week */
+.weekdots{display:flex;gap:6px;margin:8px 0 4px}
+.wd{flex:1;text-align:center}
+.wd .dot{width:100%;aspect-ratio:1;max-width:44px;margin:0 auto;border-radius:50%;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-weight:900;background:var(--surface)}
+.wd small{display:block;margin-top:4px;font-size:.68rem;color:var(--muted);font-weight:700}
+.wd.done .dot{background:var(--green);border-color:var(--green);color:#fff}
+.wd.rest .dot{background:var(--surface2);border-color:var(--rest);color:var(--muted)}
+.wd.today .dot{outline:3px solid var(--accent);outline-offset:1px}
+/* calendar */
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.cal-head b{font-size:1rem}
+.cal-head button{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 14px;font-weight:800;color:var(--ink)}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.cal .dow{text-align:center;font-size:.7rem;font-weight:800;color:var(--muted);padding:2px 0}
+.cal .day{aspect-ratio:1;border-radius:10px;border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;background:var(--surface);position:relative;padding:2px}
+.cal .day .pt{font-size:.58rem;font-weight:800;color:var(--muted)}
+.cal .day.empty{border:0;background:transparent}
+.cal .day.practice{background:#cdeeda;border-color:var(--green)}
+.cal .day.study{background:#d7e4fd;border-color:var(--blue)}
+.cal .day.both{background:var(--gold-bg);border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
+.cal .day.restd{background:var(--surface2);color:var(--muted)}
+.cal .day.today{outline:3px solid var(--ink);outline-offset:-1px}
+@media (prefers-color-scheme: dark){.cal .day.practice{background:#14532d}.cal .day.study{background:#1e3a8a}}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.75rem;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px;margin-right:4px;border:1px solid var(--line)}
+/* badges */
+.badges{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.badge{border:1px solid var(--line);border-radius:13px;padding:10px 6px;text-align:center;background:var(--surface2);opacity:.45;filter:grayscale(1)}
+.badge.got{opacity:1;filter:none;background:var(--gold-bg);border-color:var(--gold)}
+.badge .bi{font-size:1.5rem}
+.badge b{display:block;font-size:.72rem;margin-top:2px}
+.badge span{font-size:.62rem;color:var(--muted)}
+/* measure */
+.mrow{display:grid;grid-template-columns:1fr 96px;gap:8px;margin-bottom:8px}
+.mrow label{font-size:.85rem;font-weight:700;align-self:center}
+.mrow input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px;background:var(--surface);color:var(--ink);font:inherit}
+.mlist{font-size:.85rem;margin:8px 0 0;padding-left:18px}
+.note{font-size:.78rem;color:var(--muted)}
+.btn{border:0;border-radius:11px;padding:11px 16px;font-weight:900;background:var(--ink);color:var(--bg)}
+.btn.sub{background:var(--surface2);color:var(--ink);border:1px solid var(--line)}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.actions .btn,.actions label.btn{flex:1;text-align:center;min-width:140px}
+input[type=file]{display:none}
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(10,20,12,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
+.modal.open{display:flex}
+.modal .box{background:var(--surface);border-radius:20px;padding:28px 22px;text-align:center;max-width:340px;width:100%;box-shadow:var(--shadow)}
+.modal .big{font-size:3rem}
+.modal h3{margin:6px 0;font-size:1.3rem}
+footer{margin-top:18px;font-size:.75rem;color:var(--muted);text-align:center}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(80px);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:99px;font-weight:800;font-size:.9rem;transition:transform .3s;z-index:60;max-width:92vw;text-align:center}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>⚽ 選手カードクエスト</h1>
+  <p class="sub">自主練と自学でポイントをためて、選手カードを進化させよう。平日15〜30分でOK、週に1回は休んでいい。</p>
+
+  <div class="stats" role="group" aria-label="ステータス">
+    <div class="stat"><b id="stLv">Lv.1</b><span>総合レベル</span></div>
+    <div class="stat"><b id="stPt">0 pt</b><span>合計ポイント</span></div>
+    <div class="stat"><b id="stStreak">0日</b><span>連続記録</span></div>
+    <div class="stat"><b id="stWeek">0/5日</b><span>今週の目標</span></div>
+  </div>
+  <div class="xpbar" aria-hidden="true"><i id="xpFill"></i></div>
+  <p class="xpnote" id="xpNote">次のレベルまで あと100pt</p>
+
+  <div class="grid">
+    <div>
+      <section class="panel" aria-label="選手カード">
+        <h2>🪪 選手カード <span class="tag">進化で姿が変わる</span></h2>
+        <div class="pcard tier-bronze" id="pcard">
+          <div class="row1">
+            <div class="pos">SB<small>サイドバック</small></div>
+            <div class="tiername" id="tierName">🥉 ブロンズ</div>
+          </div>
+          <div class="face" aria-hidden="true">
+            <svg width="110" height="110" viewBox="0 0 100 100"><circle cx="50" cy="26" r="14" fill="#fff" opacity=".95"/><path d="M50 42c-14 0-22 10-24 26l-3 18h14l5-16v24h16V70l5 16h14l-3-18c-2-16-10-26-24-26z" fill="#fff" opacity=".95"/><circle cx="82" cy="80" r="10" fill="#17251b"/><path d="M82 70a10 10 0 010 20M74 76h16M76 86l6-12 6 12" stroke="#fff" stroke-width="1.6" fill="none"/></svg>
+          </div>
+          <div class="pname" id="cardName">MY PLAYER</div>
+          <div class="pteam" id="cardStage">舞台：近所の公園</div>
+          <div class="abilities" id="abilities"></div>
+        </div>
+        <div class="evo" id="evo"></div>
+        <p class="note" style="margin-top:10px">名前は下のボタンで変えられるよ。写真カードは家族と相談してから作ろう。</p>
+        <div class="actions">
+          <button class="btn sub" id="renameBtn" type="button">✏️ 名前を変える</button>
+        </div>
+        <div id="renameBox" style="display:none;margin-top:10px">
+          <div class="mrow"><label for="nameInput">カードの名前</label><input id="nameInput" type="text" maxlength="12" placeholder="例）TAKERU"></div>
+          <button class="btn" id="nameSave" type="button" style="width:100%">決定</button>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-top:16px" aria-label="バッジ">
+        <h2>🏅 バッジ</h2>
+        <div class="badges" id="badges"></div>
+      </section>
+    </div>
+
+    <div>
+      <section class="panel" aria-label="今日のクエスト">
+        <h2>🎯 きょうのクエスト <span class="tag">1つでもやれば記録される</span></h2>
+        <p class="sec-label">⚽ 自主練（平日は合計15〜30分が目安）</p>
+        <div id="practiceQuests"></div>
+        <p class="sec-label">📚 自学（宿題＋自学ノート1ページ以上）</p>
+        <div id="studyQuests"></div>
+        <button class="restbtn" id="restBtn" type="button">😴 今日はお休みの日にする（週1回までOK・記録は途切れない）</button>
+        <p class="note" style="margin-top:8px">痛いところがある日は、無理せず「ケア（ストレッチ）」だけでもOK。やらない日があっても、カードが下がることはないよ。</p>
+      </section>
+
+      <section class="panel" style="margin-top:16px" aria-label="今週の目標">
+        <h2>📆 今週の目標：5日やる</h2>
+        <div class="weekdots" id="weekDots"></div>
+        <p class="note" id="weekNote">あと5日で週目標クリア！</p>
+      </section>
+
+      <section class="panel" style="margin-top:16px" aria-label="カレンダー">
+        <h2>🗓️ カレンダー</h2>
+        <div class="cal-head">
+          <button type="button" id="prevM" aria-label="前の月">◀</button>
+          <b id="calTitle"></b>
+          <button type="button" id="nextM" aria-label="次の月">▶</button>
+        </div>
+        <div class="cal" id="cal"></div>
+        <div class="legend">
+          <span><i style="background:#cdeeda"></i>自主練</span>
+          <span><i style="background:#d7e4fd"></i>自学</span>
+          <span><i style="background:#fdf3d3"></i>両方（金）</span>
+          <span><i style="background:#e9efe3"></i>お休み</span>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-top:16px" aria-label="測定">
+        <h2>📏 月1回の測定 <span class="tag">比べるのは過去の自分</span></h2>
+        <div class="mrow"><label for="mSide">反復横とび（20秒・回）</label><input id="mSide" type="number" inputmode="numeric" min="0" placeholder="回"></div>
+        <div class="mrow"><label for="mDash">20m走（秒・小さいほど速い）</label><input id="mDash" type="number" inputmode="decimal" step="0.01" min="0" placeholder="秒"></div>
+        <div class="mrow"><label for="mJump">立ち幅とび（cm）</label><input id="mJump" type="number" inputmode="numeric" min="0" placeholder="cm"></div>
+        <div class="mrow"><label for="mTarget">目標ライン（反復横とび・回）</label><input id="mTarget" type="number" inputmode="numeric" min="0" placeholder="家族で決める"></div>
+        <p class="note">目標ラインは「次の学年の全国平均」などを参考に、家族で決めて入れてね（文部科学省スポーツ庁「新体力テスト」の結果が目安）。ここには数字を勝手に入れていないよ。</p>
+        <button class="btn" id="mSave" type="button" style="width:100%">測定を記録する（+30pt）</button>
+        <ul class="mlist" id="mList"><li class="note">まだ測定記録はないよ。月1回、同じ条件で測ろう。</li></ul>
+        <svg id="mChart" viewBox="0 0 320 110" width="100%" height="110" style="margin-top:8px" aria-label="反復横とびの記録グラフ"></svg>
+      </section>
+
+      <section class="panel" style="margin-top:16px" aria-label="記録の保存">
+        <h2>💾 記録の保存・引き継ぎ</h2>
+        <p class="note">記録はこの端末に自動で保存されるので、ページを閉じても翌日続きから再開できます。万一に備えて、週1回はCSVで書き出して家族で保管してね。別の端末への引っ越しもCSVの読み込みでできます。</p>
+        <div class="actions">
+          <button class="btn" id="csvOut" type="button">⬇️ CSVで書き出す</button>
+          <label class="btn sub" for="csvIn">⬆️ CSVを読み込む</label>
+          <input type="file" id="csvIn" accept=".csv,text/csv">
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <footer>比べる相手は、昨日の自分だけ。休むことも作戦のうち。</footer>
+</div>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="box">
+    <div class="big" id="modalIcon">🎉</div>
+    <h3 id="modalTitle">レベルアップ！</h3>
+    <p id="modalText"></p>
+    <button class="btn" id="modalClose" type="button" style="width:100%">やったー！</button>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+"use strict";
+var TODAY = new Date(); TODAY.setHours(0,0,0,0);
+function key(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+var TODAYK = key(TODAY);
+
+var ABILITIES = [
+  {id:"speed", name:"スピード", icon:"💨"},
+  {id:"agility", name:"アジリティ", icon:"🔀"},
+  {id:"touch", name:"ボールタッチ", icon:"⚽"},
+  {id:"pass", name:"パス", icon:"🎯"},
+  {id:"defense", name:"守備", icon:"🛡️"},
+  {id:"stamina", name:"スタミナ", icon:"🔋"},
+  {id:"study", name:"まなび", icon:"📚"}
+];
+var QUESTS = [
+  {id:"q_touch", type:"practice", icon:"⚽", name:"ボールタッチ 10分", desc:"タップ・リフティングなど、ボールに触る練習", pt:30, ab:"touch"},
+  {id:"q_agility", type:"practice", icon:"🔀", name:"アジリティ 10分", desc:"ラダー風ステップ・方向転換・反復横とびの動き", pt:30, ab:"agility"},
+  {id:"q_dash", type:"practice", icon:"💨", name:"ダッシュ＆体幹 10分", desc:"短いダッシュ数本＋プランクなどの体幹", pt:30, ab:"speed"},
+  {id:"q_care", type:"practice", icon:"🧘", name:"ケアの日：ストレッチ 10分", desc:"疲れている日・痛い日はこちら。体を整えるのも練習", pt:20, ab:"stamina"},
+  {id:"q_homework", type:"study", icon:"✏️", name:"宿題を終わらせる", desc:"学校の宿題を全部やる", pt:30, ab:"study"},
+  {id:"q_jigaku", type:"study", icon:"📖", name:"自学ノート 1ページ以上", desc:"漢字・計算・英語・読書メモなど、自分で決めた勉強", pt:30, ab:"study"}
+];
+var TIERS = [
+  {min:0, name:"🥉 ブロンズ", cls:"tier-bronze", stage:"舞台：近所の公園"},
+  {min:300, name:"🥈 シルバー", cls:"tier-silver", stage:"舞台：地区のグラウンド"},
+  {min:800, name:"🥇 ゴールド", cls:"tier-gold", stage:"舞台：県大会のスタジアム"},
+  {min:1500, name:"💎 ダイヤ", cls:"tier-diamond", stage:"舞台：全国大会のピッチ"},
+  {min:2500, name:"👑 レジェンド", cls:"tier-legend", stage:"舞台：ワールドクラスのスタジアム"}
+];
+var BADGES = [
+  {id:"b_first", icon:"🌱", name:"はじめの一歩", desc:"初クエスト達成", test:function(s){return s.totalPt>0;}},
+  {id:"b_both", icon:"🌟", name:"両方クリア", desc:"自主練＋自学を同じ日に", test:function(s){return Object.keys(s.days).some(function(k){var d=s.days[k];return d.practice&&d.study;});}},
+  {id:"b_3", icon:"🔥", name:"3日連続", desc:"連続3日記録", test:function(s){return streakOf(s)>=3;}},
+  {id:"b_7", icon:"🏆", name:"7日連続", desc:"連続7日記録", test:function(s){return streakOf(s)>=7;}},
+  {id:"b_week", icon:"📆", name:"週目標クリア", desc:"週5日達成", test:function(s){return weekDone(s)>=5;}},
+  {id:"b_measure", icon:"📏", name:"測定デビュー", desc:"測定を1回記録", test:function(s){return s.measures.length>=1;}},
+  {id:"b_silver", icon:"🥈", name:"シルバー進化", desc:"カードがシルバーに", test:function(s){return s.totalPt>=300;}},
+  {id:"b_gold", icon:"🥇", name:"ゴールド進化", desc:"カードがゴールドに", test:function(s){return s.totalPt>=800;}}
+];
+
+var state = { name:"MY PLAYER", totalPt:0, ab:{}, days:{}, measures:[], target:0 };
+ABILITIES.forEach(function(a){ state.ab[a.id]=0; });
+
+/* 永続保存：この端末のブラウザに自動保存し、ページを閉じても翌日続きから再開できる */
+var LSKEY = "player-card-quest-v1";
+try {
+  var savedRaw = localStorage.getItem(LSKEY);
+  if (savedRaw) {
+    var ps = JSON.parse(savedRaw);
+    if (ps && typeof ps === "object") {
+      if (typeof ps.name === "string" && ps.name) state.name = ps.name;
+      state.totalPt = ps.totalPt || 0;
+      state.days = ps.days || {};
+      state.measures = ps.measures || [];
+      state.target = ps.target || 0;
+      ABILITIES.forEach(function(a){ state.ab[a.id] = (ps.ab && ps.ab[a.id]) || 0; });
+    }
+  }
+} catch(e) {}
+function saveState(){ try { localStorage.setItem(LSKEY, JSON.stringify(state)); } catch(e) {} }
+
+function tierOf(pt){ var t=TIERS[0]; TIERS.forEach(function(x){ if(pt>=x.min) t=x; }); return t; }
+function levelOf(pt){ return Math.floor(pt/100)+1; }
+function rankOf(v){ if(v>=600)return"S"; if(v>=450)return"A"; if(v>=320)return"B"; if(v>=220)return"C"; if(v>=140)return"D"; if(v>=70)return"E"; if(v>=25)return"F"; return"G"; }
+function dayRec(k){ if(!state.days[k]) state.days[k]={practice:false,study:false,rest:false,pt:0,done:{}}; return state.days[k]; }
+function streakOf(s){
+  var n=0, d=new Date(TODAY);
+  // today not yet done doesn't break streak: start from yesterday if today empty
+  var tk=key(d), tr=s.days[tk];
+  if(!tr || (!tr.practice && !tr.study && !tr.rest)) d.setDate(d.getDate()-1);
+  while(true){ var r=s.days[key(d)]; if(r && (r.practice||r.study||r.rest)){ n++; d.setDate(d.getDate()-1);} else break; }
+  return n;
+}
+function weekStart(d){ var x=new Date(d); var dow=(x.getDay()+6)%7; x.setDate(x.getDate()-dow); x.setHours(0,0,0,0); return x; }
+function weekDone(s){ var ws=weekStart(TODAY), n=0; for(var i=0;i<7;i++){ var d=new Date(ws); d.setDate(d.getDate()+i); var r=s.days[key(d)]; if(r&&(r.practice||r.study)) n++; } return n; }
+
+var $=function(id){return document.getElementById(id);};
+var toastT=null;
+function toast(msg){ var t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(function(){t.classList.remove("show");},2600); }
+function showModal(icon,title,text){ $("modalIcon").textContent=icon; $("modalTitle").textContent=title; $("modalText").textContent=text; $("modal").classList.add("open"); }
+$("modalClose").addEventListener("click",function(){ $("modal").classList.remove("open"); });
+
+function renderQuests(){
+  var mk=function(q){
+    var rec=dayRec(TODAYK), done=!!rec.done[q.id];
+    var div=document.createElement("div"); div.className="quest"+(q.type==="study"?" study":"")+(done?" done":"");
+    div.innerHTML='<div class="ic" aria-hidden="true"></div><div class="body"><b></b><p></p></div><div><div class="pt">+'+q.pt+'pt</div><button type="button"></button></div>';
+    div.querySelector(".ic").textContent=q.icon;
+    div.querySelector("b").textContent=q.name;
+    div.querySelector("p").textContent=q.desc;
+    var btn=div.querySelector("button");
+    btn.textContent=done?"✔ できた":"できた！";
+    btn.disabled=done;
+    btn.setAttribute("aria-label", q.name+" を完了にする");
+    btn.addEventListener("click",function(){ completeQuest(q); });
+    return div;
+  };
+  var p=$("practiceQuests"), s=$("studyQuests"); p.innerHTML=""; s.innerHTML="";
+  QUESTS.forEach(function(q){ (q.type==="practice"?p:s).appendChild(mk(q)); });
+  var rec=dayRec(TODAYK);
+  $("restBtn").classList.toggle("on", !!rec.rest);
+  $("restBtn").textContent = rec.rest ? "✔ 今日はお休みの日（タップで取り消し）" : "😴 今日はお休みの日にする（週1回までOK・記録は途切れない）";
+}
+function completeQuest(q){
+  var beforeLv=levelOf(state.totalPt), beforeTier=tierOf(state.totalPt).name;
+  var rec=dayRec(TODAYK);
+  if(rec.done[q.id]) return;
+  rec.done[q.id]=true; rec[q.type]=true; rec.rest=false; rec.pt+=q.pt;
+  state.totalPt+=q.pt; state.ab[q.ab]+=q.pt;
+  renderAll();
+  var afterLv=levelOf(state.totalPt), afterTier=tierOf(state.totalPt).name;
+  if(afterTier!==beforeTier){ showModal("✨","カードが進化した！", "選手カードが "+afterTier+" になったよ。"+tierOf(state.totalPt).stage+" へ！"); }
+  else if(afterLv>beforeLv){ showModal("🎉","レベルアップ！", "Lv."+afterLv+" になったよ。この調子！"); }
+  else toast("+"+q.pt+"pt ゲット！ "+q.name);
+}
+$("restBtn").addEventListener("click",function(){
+  var rec=dayRec(TODAYK); rec.rest=!rec.rest; renderAll();
+  toast(rec.rest?"今日はお休みの日。しっかり休もう":"お休みを取り消したよ");
+});
+
+function renderStats(){
+  var lv=levelOf(state.totalPt);
+  $("stLv").textContent="Lv."+lv;
+  $("stPt").textContent=state.totalPt+" pt";
+  $("stStreak").textContent=streakOf(state)+"日";
+  $("stWeek").textContent=weekDone(state)+"/5日";
+  var into=state.totalPt%100;
+  $("xpFill").style.width=into+"%";
+  $("xpNote").textContent="次のレベル（Lv."+(lv+1)+"）まで あと"+(100-into)+"pt ・ 称号は "+tierOf(state.totalPt).name.replace(/^\S+\s/,"")+"、次の進化まで "+nextTierNote();
+}
+function nextTierNote(){
+  for(var i=0;i<TIERS.length;i++){ if(state.totalPt<TIERS[i].min) return "あと"+(TIERS[i].min-state.totalPt)+"pt"; }
+  return "最大進化に到達！";
+}
+function renderCard(){
+  var t=tierOf(state.totalPt), card=$("pcard");
+  card.className="pcard "+t.cls;
+  $("tierName").textContent=t.name;
+  $("cardStage").textContent=t.stage;
+  $("cardName").textContent=state.name;
+  var box=$("abilities"); box.innerHTML="";
+  ABILITIES.forEach(function(a){
+    var v=state.ab[a.id]||0;
+    var d=document.createElement("div"); d.className="ab";
+    d.innerHTML='<div class="top"><span>'+a.icon+" "+a.name+'</span><span class="rank">'+rankOf(v)+'</span></div><div class="bar"><i style="width:'+Math.min(100, v/6)+'%"></i></div>';
+    box.appendChild(d);
+  });
+  var evo=$("evo"); evo.innerHTML="";
+  TIERS.forEach(function(x){
+    var sp=document.createElement("span");
+    if(state.totalPt>=x.min) sp.className="on";
+    sp.innerHTML=x.name+"<small>"+x.min+"pt〜</small>";
+    evo.appendChild(sp);
+  });
+}
+function renderWeek(){
+  var ws=weekStart(TODAY), names=["月","火","水","木","金","土","日"], box=$("weekDots"); box.innerHTML="";
+  for(var i=0;i<7;i++){
+    var d=new Date(ws); d.setDate(d.getDate()+i); var r=state.days[key(d)];
+    var cls="wd"; if(r&&(r.practice||r.study)) cls+=" done"; else if(r&&r.rest) cls+=" rest";
+    if(key(d)===TODAYK) cls+=" today";
+    var div=document.createElement("div"); div.className=cls;
+    div.innerHTML='<div class="dot">'+(r&&(r.practice||r.study)?"✔":(r&&r.rest?"休":"・"))+'</div><small>'+names[i]+" "+(d.getMonth()+1)+"/"+d.getDate()+"</small>";
+    box.appendChild(div);
+  }
+  var n=weekDone(state);
+  $("weekNote").textContent = n>=5 ? "🎉 週目標クリア！今週はもう休んでもOK。" : "あと"+(5-n)+"日で週目標クリア！（お休みの日があっても大丈夫）";
+}
+var calCursor=new Date(TODAY.getFullYear(), TODAY.getMonth(), 1);
+function renderCal(){
+  $("calTitle").textContent=calCursor.getFullYear()+"年"+(calCursor.getMonth()+1)+"月";
+  var cal=$("cal"); cal.innerHTML="";
+  ["月","火","水","木","金","土","日"].forEach(function(n){ var d=document.createElement("div"); d.className="dow"; d.textContent=n; cal.appendChild(d); });
+  var first=new Date(calCursor.getFullYear(), calCursor.getMonth(), 1);
+  var offset=(first.getDay()+6)%7;
+  var days=new Date(calCursor.getFullYear(), calCursor.getMonth()+1, 0).getDate();
+  for(var i=0;i<offset;i++){ var e=document.createElement("div"); e.className="day empty"; cal.appendChild(e); }
+  for(var dd=1; dd<=days; dd++){
+    var d=new Date(calCursor.getFullYear(), calCursor.getMonth(), dd), k=key(d), r=state.days[k];
+    var div=document.createElement("div"); div.className="day";
+    if(r&&r.practice&&r.study) div.classList.add("both"); else if(r&&r.practice) div.classList.add("practice"); else if(r&&r.study) div.classList.add("study"); else if(r&&r.rest) div.classList.add("restd");
+    if(k===TODAYK) div.classList.add("today");
+    div.innerHTML="<span>"+dd+"</span>"+(r&&r.pt?'<span class="pt">'+r.pt+"pt</span>":"");
+    cal.appendChild(div);
+  }
+}
+$("prevM").addEventListener("click",function(){ calCursor.setMonth(calCursor.getMonth()-1); renderCal(); });
+$("nextM").addEventListener("click",function(){ calCursor.setMonth(calCursor.getMonth()+1); renderCal(); });
+
+function renderBadges(){
+  var box=$("badges"); box.innerHTML="";
+  BADGES.forEach(function(b){
+    var got=b.test(state);
+    var d=document.createElement("div"); d.className="badge"+(got?" got":"");
+    d.innerHTML='<div class="bi">'+b.icon+'</div><b></b><span></span>';
+    d.querySelector("b").textContent=b.name; d.querySelector("span").textContent=got?"ゲット！":b.desc;
+    box.appendChild(d);
+  });
+}
+function renderMeasures(){
+  var ul=$("mList"); ul.innerHTML="";
+  if(!state.measures.length){ ul.innerHTML='<li class="note">まだ測定記録はないよ。月1回、同じ条件で測ろう。</li>'; }
+  state.measures.slice().reverse().forEach(function(m){
+    var li=document.createElement("li");
+    li.textContent=m.date+"：反復横とび "+(m.side||"―")+"回 ／ 20m走 "+(m.dash||"―")+"秒 ／ 立ち幅とび "+(m.jump||"―")+"cm";
+    ul.appendChild(li);
+  });
+  // chart: side steps history
+  var svg=$("mChart"), pts=state.measures.filter(function(m){return m.side;});
+  var ns="http://www.w3.org/2000/svg"; svg.innerHTML="";
+  function el(tag,attrs){ var e=document.createElementNS(ns,tag); for(var k in attrs) e.setAttribute(k,attrs[k]); svg.appendChild(e); return e; }
+  el("line",{x1:28,y1:92,x2:308,y2:92,stroke:"#9aa79c","stroke-width":1});
+  el("line",{x1:28,y1:10,x2:28,y2:92,stroke:"#9aa79c","stroke-width":1});
+  var maxV=Math.max(60, state.target||0); pts.forEach(function(m){ maxV=Math.max(maxV, m.side); });
+  if(state.target>0){
+    var ty=92-(state.target/maxV)*78;
+    el("line",{x1:28,y1:ty,x2:308,y2:ty,stroke:"#e8a812","stroke-width":2,"stroke-dasharray":"5 4"});
+    var tx=el("text",{x:308,y:ty-4,"text-anchor":"end","font-size":10,fill:"#b8860b"}); tx.textContent="目標 "+state.target+"回";
+  }
+  if(pts.length){
+    var step=pts.length>1? 260/(pts.length-1) : 0;
+    var path="";
+    pts.forEach(function(m,i){ var x=pts.length>1? 38+i*step : 168; var y=92-(m.side/maxV)*78; path+=(i?"L":"M")+x+" "+y+" "; el("circle",{cx:x,cy:y,r:4,fill:"#1d9e57"}); var t=el("text",{x:x,y:y-8,"text-anchor":"middle","font-size":10,fill:"currentColor"}); t.textContent=m.side; });
+    el("path",{d:path,fill:"none",stroke:"#1d9e57","stroke-width":2.5});
+  } else {
+    var t2=el("text",{x:168,y:55,"text-anchor":"middle","font-size":11,fill:"#5b6b5e"}); t2.textContent="測定するとグラフが出るよ";
+  }
+}
+$("mSave").addEventListener("click",function(){
+  var side=parseInt($("mSide").value,10), dash=parseFloat($("mDash").value), jump=parseInt($("mJump").value,10);
+  var tgt=parseInt($("mTarget").value,10); if(!isNaN(tgt)&&tgt>0) state.target=tgt;
+  if(isNaN(side)&&isNaN(dash)&&isNaN(jump)){ toast("どれか1つは数字を入れてね"); return; }
+  state.measures.push({date:TODAYK, side:isNaN(side)?null:side, dash:isNaN(dash)?null:dash, jump:isNaN(jump)?null:jump});
+  state.totalPt+=30; state.ab.agility+=15; state.ab.speed+=15;
+  $("mSide").value=""; $("mDash").value=""; $("mJump").value="";
+  renderAll(); toast("測定を記録したよ（+30pt）📏");
+});
+$("renameBtn").addEventListener("click",function(){ var b=$("renameBox"); b.style.display=b.style.display==="none"?"block":"none"; });
+$("nameSave").addEventListener("click",function(){ var v=$("nameInput").value.trim(); if(v){ state.name=v.toUpperCase(); } $("renameBox").style.display="none"; renderAll(); toast("カードの名前を変えたよ"); });
+
+function toCSV(){
+  var lines=["type,date,practice,study,rest,pt,side,dash,jump,name,target"];
+  Object.keys(state.days).sort().forEach(function(k){ var d=state.days[k]; lines.push(["day",k,d.practice?1:0,d.study?1:0,d.rest?1:0,d.pt,"","","","",state.target].join(",")); });
+  state.measures.forEach(function(m){ lines.push(["measure",m.date,"","","",30,m.side||"",m.dash||"",m.jump||"","",state.target].join(",")); });
+  lines.push(["meta","","","","",state.totalPt,"","","",'"'+state.name.replace(/"/g,'""')+'"',state.target].join(","));
+  ABILITIES.forEach(function(a){ lines.push(["ability","","","","",state.ab[a.id]||0,"","","",a.id,""].join(",")); });
+  return lines.join("\n");
+}
+$("csvOut").addEventListener("click",function(){
+  var blob=new Blob(["\ufeff"+toCSV()],{type:"text/csv"});
+  var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="player-card-quest-"+TODAYK+".csv"; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
+  toast("CSVを書き出したよ。大事に保管してね");
+});
+$("csvIn").addEventListener("change",function(ev){
+  var f=ev.target.files[0]; if(!f) return;
+  var r=new FileReader();
+  r.onload=function(){
+    try{
+      var text=String(r.result).replace(/^\ufeff/,"");
+      var rows=text.split(/\r?\n/).filter(function(x){return x.trim();});
+      var ns={ name:"MY PLAYER", totalPt:0, ab:{}, days:{}, measures:[], target:0 };
+      ABILITIES.forEach(function(a){ ns.ab[a.id]=0; });
+      rows.slice(1).forEach(function(row){
+        var c=row.split(",");
+        if(c[0]==="day"){ ns.days[c[1]]={practice:c[2]==="1",study:c[3]==="1",rest:c[4]==="1",pt:parseInt(c[5],10)||0,done:{}}; if(parseInt(c[10],10)) ns.target=parseInt(c[10],10); }
+        else if(c[0]==="measure"){ ns.measures.push({date:c[1],side:c[6]?parseInt(c[6],10):null,dash:c[7]?parseFloat(c[7]):null,jump:c[8]?parseInt(c[8],10):null}); }
+        else if(c[0]==="meta"){ ns.totalPt=parseInt(c[5],10)||0; var nm=row.match(/"([^"]*)"/); if(nm) ns.name=nm[1]; if(parseInt(c[10],10)) ns.target=parseInt(c[10],10); }
+        else if(c[0]==="ability"){ ns.ab[c[9]]=parseInt(c[5],10)||0; }
+      });
+      // restore today's done flags from day pt is not possible; mark day types only
+      state=ns; renderAll(); toast("記録を読み込んだよ！続きから再開");
+    }catch(e){ toast("読み込みに失敗したよ。CSVを確認してね"); }
+  };
+  r.readAsText(f);
+  ev.target.value="";
+});
+
+function renderAll(){ renderStats(); renderCard(); renderQuests(); renderWeek(); renderCal(); renderBadges(); renderMeasures(); saveState(); }
+renderAll();
+})();
+</script>
+</body>
+</html>
