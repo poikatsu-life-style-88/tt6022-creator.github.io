@@ -161,6 +161,7 @@ footer{margin-top:18px;font-size:.75rem;color:var(--muted);text-align:center}
             <div class="pos">SB<small>サイドバック</small></div>
             <div class="tiername" id="tierName">🥉 ブロンズ</div>
           </div>
+          <div id="cardEmblem" style="position:absolute;top:56px;right:14px;font-size:1.8rem;z-index:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,.4))"></div>
           <div class="face" id="cardFace" aria-hidden="true">
             <svg width="110" height="110" viewBox="0 0 100 100"><circle cx="50" cy="26" r="14" fill="#fff" opacity=".95"/><path d="M50 42c-14 0-22 10-24 26l-3 18h14l5-16v24h16V70l5 16h14l-3-18c-2-16-10-26-24-26z" fill="#fff" opacity=".95"/><circle cx="82" cy="80" r="10" fill="#17251b"/><path d="M82 70a10 10 0 010 20M74 76h16M76 86l6-12 6 12" stroke="#fff" stroke-width="1.6" fill="none"/></svg>
           </div>
@@ -185,6 +186,12 @@ footer{margin-top:18px;font-size:.75rem;color:var(--muted);text-align:center}
       <section class="panel" style="margin-top:16px" aria-label="バッジ">
         <h2>🏅 バッジ</h2>
         <div class="badges" id="badges"></div>
+      </section>
+
+      <section class="panel" style="margin-top:16px" aria-label="アイテム">
+        <h2>🎁 アイテム交換 <span class="tag" id="starBalance">⭐ 0</span></h2>
+        <p class="note">スターは「レベルアップ +1」「週5日クリア +2」「測定で自己ベスト +1」でたまるよ。ためてエンブレムと交換すると、選手カードに付けられる。</p>
+        <div id="shop"></div>
       </section>
     </div>
 
@@ -284,23 +291,35 @@ var QUESTS = [
 ];
 var TIERS = [
   {min:0, name:"🥉 ブロンズ", cls:"tier-bronze", stage:"舞台：近所の公園"},
-  {min:300, name:"🥈 シルバー", cls:"tier-silver", stage:"舞台：地区のグラウンド"},
-  {min:800, name:"🥇 ゴールド", cls:"tier-gold", stage:"舞台：県大会のスタジアム"},
-  {min:1500, name:"💎 ダイヤ", cls:"tier-diamond", stage:"舞台：全国大会のピッチ"},
-  {min:2500, name:"👑 レジェンド", cls:"tier-legend", stage:"舞台：ワールドクラスのスタジアム"}
+  {min:400, name:"🥈 シルバー", cls:"tier-silver", stage:"舞台：地区のグラウンド"},
+  {min:1200, name:"🥇 ゴールド", cls:"tier-gold", stage:"舞台：県大会のスタジアム"},
+  {min:3000, name:"💎 ダイヤ", cls:"tier-diamond", stage:"舞台：全国大会のピッチ"},
+  {min:6000, name:"👑 レジェンド", cls:"tier-legend", stage:"舞台：ワールドクラスのスタジアム"}
 ];
 var BADGES = [
   {id:"b_first", icon:"🌱", name:"はじめの一歩", desc:"初クエスト達成", test:function(s){return s.totalPt>0;}},
   {id:"b_both", icon:"🌟", name:"両方クリア", desc:"自主練＋自学を同じ日に", test:function(s){return Object.keys(s.days).some(function(k){var d=s.days[k];return d.practice&&d.study;});}},
   {id:"b_3", icon:"🔥", name:"3日連続", desc:"連続3日記録", test:function(s){return streakOf(s)>=3;}},
   {id:"b_7", icon:"🏆", name:"7日連続", desc:"連続7日記録", test:function(s){return streakOf(s)>=7;}},
-  {id:"b_week", icon:"📆", name:"週目標クリア", desc:"週5日達成", test:function(s){return weekDone(s)>=5;}},
+  {id:"b_week", icon:"📆", name:"週目標クリア", desc:"週5日達成", test:function(s){return s.weekClearedEver || weekDone(s)>=5;}},
   {id:"b_measure", icon:"📏", name:"測定デビュー", desc:"測定を1回記録", test:function(s){return s.measures.length>=1;}},
-  {id:"b_silver", icon:"🥈", name:"シルバー進化", desc:"カードがシルバーに", test:function(s){return s.totalPt>=300;}},
-  {id:"b_gold", icon:"🥇", name:"ゴールド進化", desc:"カードがゴールドに", test:function(s){return s.totalPt>=800;}}
+  {id:"b_silver", icon:"🥈", name:"シルバー進化", desc:"カードがシルバーに", test:function(s){return s.totalPt>=400;}},
+  {id:"b_gold", icon:"🥇", name:"ゴールド進化", desc:"カードがゴールドに", test:function(s){return s.totalPt>=1200;}},
+  {id:"b_item", icon:"🎁", name:"はじめてのアイテム", desc:"スターでアイテムをゲット", test:function(s){return (s.items||[]).length>=1;}},
+  {id:"b_combo", icon:"💥", name:"コンボ達成", desc:"自主練＋自学を同じ日に両方", test:function(s){return Object.keys(s.days).some(function(k){return s.days[k].combo;});}}
 ];
 
-var state = { name:"MY PLAYER", totalPt:0, ab:{}, days:{}, measures:[], target:0, photo:"" };
+var state = { name:"MY PLAYER", totalPt:0, ab:{}, days:{}, measures:[], target:0, photo:"", stars:0, items:[], emblem:"", chestWeek:"", weekClearedEver:false };
+var ITEMS = [
+  {id:"it_bolt", icon:"⚡", name:"スピードスター", cost:1},
+  {id:"it_fire", icon:"🔥", name:"炎のエンブレム", cost:2},
+  {id:"it_star", icon:"🌟", name:"ゴールデンスター", cost:3},
+  {id:"it_lion", icon:"🦁", name:"ライオン", cost:4},
+  {id:"it_crown", icon:"👑", name:"クラウン", cost:5},
+  {id:"it_wing", icon:"🪽", name:"ウィング", cost:6},
+  {id:"it_rainbow", icon:"🌈", name:"レインボー", cost:8},
+  {id:"it_trophy", icon:"🏆", name:"チャンピオントロフィー", cost:10}
+];
 ABILITIES.forEach(function(a){ state.ab[a.id]=0; });
 
 /* 永続保存：この端末のブラウザに自動保存し、ページを閉じても翌日続きから再開できる */
@@ -316,6 +335,11 @@ try {
       state.measures = ps.measures || [];
       state.target = ps.target || 0;
       if (typeof ps.photo === "string") state.photo = ps.photo;
+      state.stars = ps.stars || 0;
+      state.items = ps.items || [];
+      state.emblem = ps.emblem || "";
+      state.chestWeek = ps.chestWeek || "";
+      state.weekClearedEver = !!ps.weekClearedEver;
       ABILITIES.forEach(function(a){ state.ab[a.id] = (ps.ab && ps.ab[a.id]) || 0; });
     }
   }
@@ -364,16 +388,32 @@ function renderQuests(){
   $("restBtn").classList.toggle("on", !!rec.rest);
   $("restBtn").textContent = rec.rest ? "✔ 今日はお休みの日（タップで取り消し）" : "😴 今日はお休みの日にする（週1回までOK・記録は途切れない）";
 }
+function weekKeyOf(d){ return key(weekStart(d)); }
+function grantChestIfNeeded(){
+  var wk=weekKeyOf(TODAY);
+  if(weekDone(state)>=5 && state.chestWeek!==wk){
+    state.chestWeek=wk; state.weekClearedEver=true; state.stars+=2;
+    return true;
+  }
+  return false;
+}
 function completeQuest(q){
   var beforeLv=levelOf(state.totalPt), beforeTier=tierOf(state.totalPt).name;
   var rec=dayRec(TODAYK);
   if(rec.done[q.id]) return;
   rec.done[q.id]=true; rec[q.type]=true; rec.rest=false; rec.pt+=q.pt;
   state.totalPt+=q.pt; state.ab[q.ab]+=q.pt;
-  renderAll();
+  var combo=false;
+  if(rec.practice && rec.study && !rec.combo){ rec.combo=true; combo=true; rec.pt+=20; state.totalPt+=20; }
   var afterLv=levelOf(state.totalPt), afterTier=tierOf(state.totalPt).name;
-  if(afterTier!==beforeTier){ showModal("✨","カードが進化した！", "選手カードが "+afterTier+" になったよ。"+tierOf(state.totalPt).stage+" へ！"); }
-  else if(afterLv>beforeLv){ showModal("🎉","レベルアップ！", "Lv."+afterLv+" になったよ。この調子！"); }
+  var lvStars=Math.max(0, afterLv-beforeLv); state.stars+=lvStars;
+  var chest=grantChestIfNeeded();
+  renderAll();
+  var bonusNote = chest ? " 週目標クリアのごほうびチェストで ⭐+2！" : "";
+  if(afterTier!==beforeTier){ showModal("✨","カードが進化した！", "選手カードが "+afterTier+" になったよ。"+tierOf(state.totalPt).stage+" へ！"+bonusNote); }
+  else if(afterLv>beforeLv){ showModal("🎉","レベルアップ！", "Lv."+afterLv+" になったよ。ごほうびに ⭐+"+lvStars+" ゲット！"+bonusNote); }
+  else if(combo){ showModal("💥","コンボボーナス！", "自主練＋自学の両方クリアで +20pt ボーナス！"+bonusNote); }
+  else if(chest){ showModal("🎁","週目標クリア！", "今週5日達成！ごほうびチェストで ⭐+2 ゲット。アイテムと交換できるよ！"); }
   else toast("+"+q.pt+"pt ゲット！ "+q.name);
 }
 $("restBtn").addEventListener("click",function(){
@@ -402,6 +442,8 @@ function renderCard(){
   $("tierName").textContent=t.name;
   $("cardStage").textContent=t.stage;
   $("cardName").textContent=state.name;
+  var em=$("cardEmblem");
+  if(state.emblem){ var it0=ITEMS.filter(function(x){return x.id===state.emblem;})[0]; em.textContent=it0?it0.icon:""; } else em.textContent="";
   var face=$("cardFace");
   if(state.photo){
     face.innerHTML="";
@@ -506,10 +548,22 @@ $("mSave").addEventListener("click",function(){
   var side=parseInt($("mSide").value,10), dash=parseFloat($("mDash").value), jump=parseInt($("mJump").value,10);
   var tgt=parseInt($("mTarget").value,10); if(!isNaN(tgt)&&tgt>0) state.target=tgt;
   if(isNaN(side)&&isNaN(dash)&&isNaN(jump)){ toast("どれか1つは数字を入れてね"); return; }
+  var prevBest={side:null,dash:null,jump:null};
+  state.measures.forEach(function(m){
+    if(m.side!=null) prevBest.side = prevBest.side==null? m.side : Math.max(prevBest.side,m.side);
+    if(m.dash!=null) prevBest.dash = prevBest.dash==null? m.dash : Math.min(prevBest.dash,m.dash);
+    if(m.jump!=null) prevBest.jump = prevBest.jump==null? m.jump : Math.max(prevBest.jump,m.jump);
+  });
+  var isPB = (prevBest.side!=null && !isNaN(side) && side>prevBest.side)
+          || (prevBest.dash!=null && !isNaN(dash) && dash<prevBest.dash)
+          || (prevBest.jump!=null && !isNaN(jump) && jump>prevBest.jump);
   state.measures.push({date:TODAYK, side:isNaN(side)?null:side, dash:isNaN(dash)?null:dash, jump:isNaN(jump)?null:jump});
   state.totalPt+=30; state.ab.agility+=15; state.ab.speed+=15;
+  if(isPB) state.stars+=1;
   $("mSide").value=""; $("mDash").value=""; $("mJump").value="";
-  renderAll(); toast("測定を記録したよ（+30pt）📏");
+  renderAll();
+  if(isPB) showModal("🏅","自己ベスト更新！", "やった！記録が伸びたごほうびに ⭐+1 ゲット！（測定 +30pt）");
+  else toast("測定を記録したよ（+30pt）📏");
 });
 $("renameBtn").addEventListener("click",function(){ var b=$("renameBox"); b.style.display=b.style.display==="none"?"block":"none"; });
 $("nameSave").addEventListener("click",function(){ var v=$("nameInput").value.trim(); if(v){ state.name=v.toUpperCase(); } $("renameBox").style.display="none"; renderAll(); toast("カードの名前を変えたよ"); });
@@ -576,7 +630,22 @@ $("csvIn").addEventListener("change",function(ev){
   ev.target.value="";
 });
 
-function renderAll(){ renderStats(); renderCard(); renderQuests(); renderWeek(); renderCal(); renderBadges(); renderMeasures(); saveState(); }
+function renderShop(){
+  $("starBalance").textContent="⭐ "+state.stars;
+  var box=$("shop"); box.innerHTML="";
+  ITEMS.forEach(function(it){
+    var owned=state.items.indexOf(it.id)>=0, equipped=state.emblem===it.id;
+    var row=document.createElement("div");
+    row.style.cssText="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)";
+    row.innerHTML='<span style="font-size:1.5rem">'+it.icon+'</span><span style="flex:1"><b>'+it.name+'</b><br><small style="color:var(--muted)">'+(owned?"ゲット済み":"⭐ "+it.cost+" で交換")+'</small></span>';
+    var btn=document.createElement("button"); btn.type="button"; btn.className="btn"+(equipped?"":" sub");
+    if(equipped){ btn.textContent="✔ つけてる"; btn.addEventListener("click",function(){ state.emblem=""; renderAll(); toast("エンブレムをはずしたよ"); }); }
+    else if(owned){ btn.textContent="カードに付ける"; btn.addEventListener("click",function(){ state.emblem=it.id; renderAll(); toast(it.name+" をカードに付けたよ！"); }); }
+    else { btn.textContent="交換する"; btn.disabled=state.stars<it.cost; btn.addEventListener("click",function(){ if(state.stars<it.cost) return; state.stars-=it.cost; state.items.push(it.id); state.emblem=it.id; renderAll(); showModal("🎁","アイテムゲット！", it.icon+" "+it.name+" を手に入れて、カードに付けたよ！"); }); }
+    row.appendChild(btn); box.appendChild(row);
+  });
+}
+function renderAll(){ renderStats(); renderCard(); renderQuests(); renderWeek(); renderCal(); renderBadges(); renderMeasures(); renderShop(); saveState(); }
 renderAll();
 })();
 </script>
