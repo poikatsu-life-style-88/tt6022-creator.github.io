@@ -113,6 +113,10 @@ h1{font-size:1.35rem;margin:6px 0 2px;letter-spacing:.02em}
 .cal .day.both{background:var(--gold-bg);border-color:var(--gold);box-shadow:inset 0 0 0 1px var(--gold)}
 .cal .day.restd{background:var(--surface2);color:var(--muted)}
 .cal .day.today{outline:3px solid var(--ink);outline-offset:-1px}
+.cal .day.matchd{background:#ffe3c2;border-color:#f59e0b}
+.cal .day .mk{font-size:.62rem;line-height:1}
+#matchTiers .btn.on{background:#f59e0b;border-color:#f59e0b;color:#fff}
+textarea.notebox{width:100%;box-sizing:border-box;border:1.5px solid var(--line);border-radius:10px;padding:10px;font:inherit;font-size:.92rem;background:var(--surface);color:var(--ink);resize:vertical}
 @media (prefers-color-scheme: dark){.cal .day.practice{background:#14532d}.cal .day.study{background:#1e3a8a}}
 .legend{display:flex;gap:12px;flex-wrap:wrap;font-size:.75rem;color:var(--muted);margin-top:10px}
 .legend i{display:inline-block;width:12px;height:12px;border-radius:4px;vertical-align:-1px;margin-right:4px;border:1px solid var(--line)}
@@ -222,8 +226,20 @@ footer{margin-top:18px;font-size:.75rem;color:var(--muted);text-align:center}
         <div id="practiceQuests"></div>
         <p class="sec-label">📚 自学（宿題＋自学ノート1ページ以上）</p>
         <div id="studyQuests"></div>
+        <p class="sec-label">⚽ 試合・練習試合（試合があった日だけ）</p>
+        <button class="restbtn" id="matchBtn" type="button">⚽ 今日は試合・練習試合の日</button>
+        <div id="matchBox" style="display:none;margin-top:8px">
+          <p class="note">どれくらい出た？ 自分で選んでね。</p>
+          <div class="actions" id="matchTiers" style="margin-top:6px"></div>
+        </div>
         <button class="restbtn" id="restBtn" type="button">😴 今日はお休みの日にする（週1回までOK・記録は途切れない）</button>
         <p class="note" style="margin-top:8px">痛いところがある日は、無理せず「ケア（ストレッチ）」だけでもOK。やらない日があっても、カードが下がることはないよ。</p>
+      </section>
+
+      <section class="panel" style="margin-top:16px" data-page="quest" aria-label="サッカーノート">
+        <h2>📝 今日のサッカーノート</h2>
+        <textarea class="notebox" id="noteToday" rows="3" placeholder="今日の練習・試合で感じたこと、できたこと、次にやりたいこと"></textarea>
+        <p class="note" style="margin-top:6px">書いたら自動で保存されるよ。カレンダーで日を選ぶと、その日のノートが読める。</p>
       </section>
 
       <section class="panel" style="margin-top:16px" data-page="result" aria-label="今週の目標">
@@ -245,7 +261,9 @@ footer{margin-top:18px;font-size:.75rem;color:var(--muted);text-align:center}
           <span><i style="background:#d7e4fd"></i>自学</span>
           <span><i style="background:#fdf3d3"></i>両方（金）</span>
           <span><i style="background:#e9efe3"></i>お休み</span>
+          <span><i style="background:#ffe3c2"></i>⚽試合</span>
         </div>
+        <div id="dayDetail" class="note" style="margin-top:10px"></div>
       </section>
 
       <section class="panel" style="margin-top:16px" data-page="quest" aria-label="測定">
@@ -383,7 +401,7 @@ function tierOf(pt){ var t=TIERS[0]; TIERS.forEach(function(x){ if(pt>=x.min) t=
 function levelOf(pt){ return Math.floor(pt/100)+1; }
 function rarityOf(pt){ if(pt>=8000)return{name:"LEGEND",cls:"rar-legend"}; if(pt>=5000)return{name:"UR",cls:"rar-ur"}; if(pt>=3000)return{name:"SSR",cls:"rar-ssr"}; if(pt>=1500)return{name:"SR",cls:"rar-sr"}; if(pt>=500)return{name:"R",cls:"rar-r"}; return{name:"",cls:""}; }
 function rankOf(v){ if(v>=2500)return"SSS"; if(v>=1200)return"SS"; if(v>=600)return"S"; if(v>=450)return"A"; if(v>=320)return"B"; if(v>=220)return"C"; if(v>=140)return"D"; if(v>=70)return"E"; if(v>=25)return"F"; return"G"; }
-function dayRec(k){ if(!state.days[k]) state.days[k]={practice:false,study:false,rest:false,pt:0,done:{}}; return state.days[k]; }
+function dayRec(k){ if(!state.days[k]) state.days[k]={practice:false,study:false,rest:false,pt:0,done:{},match:null,note:""}; return state.days[k]; }
 function streakOf(s){
   var n=0, d=new Date(TODAY);
   // today not yet done doesn't break streak: start from yesterday if today empty
@@ -422,6 +440,79 @@ function renderQuests(){
   $("restBtn").classList.toggle("on", !!rec.rest);
   $("restBtn").textContent = rec.rest ? "✔ 今日はお休みの日（タップで取り消し）" : "😴 今日はお休みの日にする（週1回までOK・記録は途切れない）";
 }
+var MATCH_TIERS=[
+  {id:"bench", label:"出場なし（ベンチ）", ab:0, total:0},
+  {id:"short", label:"少し出た（15分まで）", ab:2, total:10},
+  {id:"half", label:"半分くらい（15〜30分）", ab:3, total:20},
+  {id:"long", label:"たくさん出た（30分以上）", ab:5, total:30},
+  {id:"full", label:"フル出場", ab:5, total:40}
+];
+function matchTier(id){ for(var i=0;i<MATCH_TIERS.length;i++) if(MATCH_TIERS[i].id===id) return MATCH_TIERS[i]; return null; }
+function soccerAbs(){ return ABILITIES.filter(function(a){return a.id!=="study";}); }
+var selDay=TODAYK;
+function applyMatch(tierId){
+  var rec=dayRec(TODAYK);
+  var prev=rec.match?matchTier(rec.match):null;
+  if(tierId===rec.match) return;
+  var beforeLv=levelOf(state.totalPt), beforeTier=tierOf(state.totalPt).name;
+  if(prev){ state.totalPt-=prev.total; rec.pt-=prev.total; soccerAbs().forEach(function(a){ state.ab[a.id]-=prev.ab; }); }
+  rec.match=tierId;
+  var combo=false;
+  if(tierId){
+    var t=matchTier(tierId);
+    state.totalPt+=t.total; rec.pt+=t.total; soccerAbs().forEach(function(a){ state.ab[a.id]+=t.ab; });
+    rec.rest=false; rec.practice=true;
+    if(rec.practice && rec.study && !rec.combo){ rec.combo=true; combo=true; rec.pt+=20; state.totalPt+=20; }
+  } else {
+    rec.practice = QUESTS.some(function(q){ return q.type==="practice" && rec.done[q.id]; });
+  }
+  var afterLv=levelOf(state.totalPt), afterTier=tierOf(state.totalPt).name;
+  var lvStars=Math.max(0, afterLv-beforeLv); state.stars+=lvStars;
+  var chest=grantChestIfNeeded();
+  renderAll();
+  if(tierId){
+    var tt=matchTier(tierId);
+    if(afterTier!==beforeTier){ showModal("✨","ステージアップ！", afterTier+" に上がったよ！ "+tierOf(state.totalPt).stage); }
+    else if(afterLv>beforeLv){ showModal("🎉","レベルアップ！", "Lv."+afterLv+" になったよ。ごほうびに ⭐+"+lvStars+" ゲット！"); }
+    else if(combo){ showModal("💥","コンボボーナス！", "試合＋自学の両方クリアで +20pt ボーナス！"); }
+    else toast(tt.total>0 ? "⚽ 試合を記録したよ（+"+tt.total+"pt）" : "⚽ 試合の日として記録したよ。出場したら時間を選んでね");
+  } else {
+    toast("試合の記録を取り消したよ");
+  }
+}
+function renderMatch(){
+  var rec=dayRec(TODAYK), on=!!rec.match;
+  var btn=$("matchBtn");
+  btn.classList.toggle("on", on);
+  btn.textContent = on ? "✔ 今日は試合・練習試合の日（タップで取り消し）" : "⚽ 今日は試合・練習試合の日";
+  $("matchBox").style.display = on ? "block" : "none";
+  var box=$("matchTiers"); box.innerHTML="";
+  MATCH_TIERS.forEach(function(t){
+    var b=document.createElement("button"); b.type="button"; b.className="btn sub"+(rec.match===t.id?" on":"");
+    b.textContent=t.label;
+    b.addEventListener("click",function(){ applyMatch(t.id); });
+    box.appendChild(b);
+  });
+}
+function renderNote(){
+  var ta=$("noteToday");
+  if(document.activeElement!==ta){ ta.value=dayRec(TODAYK).note||""; }
+}
+function renderDayDetail(){
+  var el=$("dayDetail"); if(!el) return;
+  var r=state.days[selDay];
+  var parts=selDay.replace(/-/g,"/");
+  var txt="<b>"+parts+"</b>：";
+  if(!r || (!r.practice && !r.study && !r.rest && !r.match)){ txt+="まだ記録はないよ。"; el.innerHTML=txt; return; }
+  var kinds=[];
+  if(r.match){ var t=matchTier(r.match); kinds.push("⚽試合（"+(t?t.label:"")+"）"); }
+  if(r.practice && !r.match) kinds.push("自主練");
+  if(r.study) kinds.push("自学");
+  if(r.rest) kinds.push("お休み");
+  txt+=kinds.join("・")+(r.pt?"　"+r.pt+"pt":"");
+  txt+= r.note ? "<br>📝 "+r.note.replace(/</g,"&lt;") : "<br>📝 ノートはないよ";
+  el.innerHTML=txt;
+}
 function weekKeyOf(d){ return key(weekStart(d)); }
 function grantChestIfNeeded(){
   var wk=weekKeyOf(TODAY);
@@ -453,6 +544,13 @@ function completeQuest(q){
 $("restBtn").addEventListener("click",function(){
   var rec=dayRec(TODAYK); rec.rest=!rec.rest; renderAll();
   toast(rec.rest?"今日はお休みの日。しっかり休もう":"お休みを取り消したよ");
+});
+$("matchBtn").addEventListener("click",function(){
+  var rec=dayRec(TODAYK);
+  if(rec.match){ applyMatch(null); } else { applyMatch("bench"); }
+});
+$("noteToday").addEventListener("input",function(ev){
+  dayRec(TODAYK).note=ev.target.value; saveState();
 });
 
 function renderStats(){
@@ -532,8 +630,11 @@ function renderCal(){
     var d=new Date(calCursor.getFullYear(), calCursor.getMonth(), dd), k=key(d), r=state.days[k];
     var div=document.createElement("div"); div.className="day";
     if(r&&r.practice&&r.study) div.classList.add("both"); else if(r&&r.practice) div.classList.add("practice"); else if(r&&r.study) div.classList.add("study"); else if(r&&r.rest) div.classList.add("restd");
+    if(r&&r.match) div.classList.add("matchd");
     if(k===TODAYK) div.classList.add("today");
-    div.innerHTML="<span>"+dd+"</span>"+(r&&r.pt?'<span class="pt">'+r.pt+"pt</span>":"");
+    div.innerHTML="<span>"+dd+"</span>"+(r&&r.match?'<span class="mk">⚽</span>':"")+(r&&r.pt?'<span class="pt">'+r.pt+"pt</span>":"");
+    div.style.cursor="pointer";
+    div.addEventListener("click",function(){ selDay=k; renderDayDetail(); });
     cal.appendChild(div);
   }
 }
@@ -645,7 +746,7 @@ function renderShop(){
     row.appendChild(btn); box.appendChild(row);
   });
 }
-function renderAll(){ renderStats(); renderCard(); renderQuests(); renderWeek(); renderCal(); renderBadges(); renderMeasures(); renderShop(); saveState(); }
+function renderAll(){ renderStats(); renderCard(); renderQuests(); renderMatch(); renderNote(); renderWeek(); renderCal(); renderDayDetail(); renderBadges(); renderMeasures(); renderShop(); saveState(); }
 renderAll();
 })();
 </script>
