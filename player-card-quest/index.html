@@ -59,6 +59,12 @@ h1{font-size:1.35rem;margin:6px 0 2px;letter-spacing:.02em}
 .pcard .face{display:flex;justify-content:center;padding:8px 0 2px;position:relative;z-index:1}
 .pcard .pname{text-align:center;font-weight:900;font-size:1.25rem;letter-spacing:.06em;position:relative;z-index:1}
 .pcard .pteam{text-align:center;font-size:.78rem;opacity:.9;position:relative;z-index:1}
+.pcard .rarity{text-align:center;font-weight:900;letter-spacing:.35em;font-size:.8rem;margin-top:4px;position:relative;z-index:1;text-shadow:0 1px 3px rgba(0,0,0,.45)}
+.pcard.rar-r{box-shadow:0 0 0 3px #d7dde6,0 12px 26px rgba(0,0,0,.4)}
+.pcard.rar-sr{box-shadow:0 0 0 3px #f5c542,0 0 22px rgba(245,197,66,.55),0 12px 26px rgba(0,0,0,.4)}
+.pcard.rar-ssr{box-shadow:0 0 0 3px #ff8a5c,0 0 0 6px #f5c542,0 0 26px rgba(255,120,200,.55),0 12px 26px rgba(0,0,0,.4)}
+.pcard.rar-ur{box-shadow:0 0 0 3px #fff3b0,0 0 0 6px #f5c542,0 0 34px rgba(245,197,66,.8),0 12px 26px rgba(0,0,0,.45)}
+.pcard.rar-legend{box-shadow:0 0 0 3px #ffe9a8,0 0 0 6px #e63946,0 0 42px rgba(230,57,70,.75),0 12px 26px rgba(0,0,0,.5)}
 .abilities{margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:7px 14px;position:relative;z-index:1}
 .ab{font-size:.8rem}
 .ab .top{display:flex;justify-content:space-between;font-weight:700}
@@ -180,6 +186,7 @@ footer{margin-top:18px;font-size:.75rem;color:var(--muted);text-align:center}
           </div>
           <div class="pname" id="cardName">TAKERU</div>
           <div class="pteam" id="cardStage">所属：地元のクラブチーム</div>
+          <div class="rarity" id="cardRarity"></div>
           <div class="abilities" id="abilities"></div>
         </div>
         <div class="evo" id="evo"></div>
@@ -253,15 +260,6 @@ footer{margin-top:18px;font-size:.75rem;color:var(--muted);text-align:center}
         <svg id="mChart" viewBox="0 0 320 110" width="100%" height="110" style="margin-top:8px" aria-label="反復横とびの記録グラフ"></svg>
       </section>
 
-      <section class="panel" style="margin-top:16px" data-page="home" aria-label="記録の保存">
-        <h2>💾 記録の保存・引き継ぎ</h2>
-        <p class="note">記録はこの端末に自動で保存されるので、ページを閉じても翌日続きから再開できます。万一に備えて、週1回はCSVで書き出して家族で保管してね。別の端末への引っ越しもCSVの読み込みでできます。</p>
-        <div class="actions">
-          <button class="btn" id="csvOut" type="button">⬇️ CSVで書き出す</button>
-          <label class="btn sub" for="csvIn">⬆️ CSVを読み込む</label>
-          <input type="file" id="csvIn" accept=".csv,text/csv">
-        </div>
-      </section>
     </div>
   </div>
 
@@ -301,8 +299,8 @@ var QUESTS = [
   {id:"q_care", type:"practice", icon:"🧘", name:"ケアの日：ストレッチ 10分", desc:"疲れている日・痛い日はこちら。体を整えるのも練習", pt:20, ab:"stamina"},
   {id:"q_pass", type:"practice", icon:"🎯", name:"壁あてパス＆トラップ 10分", desc:"壁に当てて、止める・はたく。両足でやろう", pt:30, ab:"pass"},
   {id:"q_def", type:"practice", icon:"🛡️", name:"コーン守備ダッシュ 10分", desc:"目印を相手に見立てて、ダッシュで寄せる→止まる→横についていく→後ろに下がってターン", pt:30, ab:"defense"},
-  {id:"q_homework", type:"study", icon:"✏️", name:"宿題を終わらせる", desc:"学校の宿題を全部やる", pt:30, ab:"study"},
-  {id:"q_jigaku", type:"study", icon:"📖", name:"自学ノート 1ページ以上", desc:"漢字・計算・英語・読書メモなど、自分で決めた勉強", pt:30, ab:"study"}
+  {id:"q_homework", type:"study", icon:"✏️", name:"宿題を終わらせる", desc:"学校の宿題を全部やる", pt:30, ab:"study", abPt:15},
+  {id:"q_jigaku", type:"study", icon:"📖", name:"自学ノート 1ページ以上", desc:"漢字・計算・英語・読書メモなど、自分で決めた勉強", pt:30, ab:"study", abPt:15}
 ];
 var TIERS = [
   {min:0, name:"🏠 地元クラブ", cls:"tier-bronze", stage:"所属：地元のクラブチーム"},
@@ -383,7 +381,8 @@ function syncUpload(){
 
 function tierOf(pt){ var t=TIERS[0]; TIERS.forEach(function(x){ if(pt>=x.min) t=x; }); return t; }
 function levelOf(pt){ return Math.floor(pt/100)+1; }
-function rankOf(v){ if(v>=600)return"S"; if(v>=450)return"A"; if(v>=320)return"B"; if(v>=220)return"C"; if(v>=140)return"D"; if(v>=70)return"E"; if(v>=25)return"F"; return"G"; }
+function rarityOf(pt){ if(pt>=8000)return{name:"LEGEND",cls:"rar-legend"}; if(pt>=5000)return{name:"UR",cls:"rar-ur"}; if(pt>=3000)return{name:"SSR",cls:"rar-ssr"}; if(pt>=1500)return{name:"SR",cls:"rar-sr"}; if(pt>=500)return{name:"R",cls:"rar-r"}; return{name:"",cls:""}; }
+function rankOf(v){ if(v>=2500)return"SSS"; if(v>=1200)return"SS"; if(v>=600)return"S"; if(v>=450)return"A"; if(v>=320)return"B"; if(v>=220)return"C"; if(v>=140)return"D"; if(v>=70)return"E"; if(v>=25)return"F"; return"G"; }
 function dayRec(k){ if(!state.days[k]) state.days[k]={practice:false,study:false,rest:false,pt:0,done:{}}; return state.days[k]; }
 function streakOf(s){
   var n=0, d=new Date(TODAY);
@@ -437,7 +436,7 @@ function completeQuest(q){
   var rec=dayRec(TODAYK);
   if(rec.done[q.id]) return;
   rec.done[q.id]=true; rec[q.type]=true; rec.rest=false; rec.pt+=q.pt;
-  state.totalPt+=q.pt; state.ab[q.ab]+=q.pt;
+  state.totalPt+=q.pt; state.ab[q.ab]+=(q.abPt!=null?q.abPt:q.pt);
   var combo=false;
   if(rec.practice && rec.study && !rec.combo){ rec.combo=true; combo=true; rec.pt+=20; state.totalPt+=20; }
   var afterLv=levelOf(state.totalPt), afterTier=tierOf(state.totalPt).name;
@@ -472,8 +471,9 @@ function nextTierNote(){
 }
 var FACE_SVG = '<svg width="110" height="110" viewBox="0 0 100 100"><circle cx="50" cy="26" r="14" fill="#fff" opacity=".95"/><path d="M50 42c-14 0-22 10-24 26l-3 18h14l5-16v24h16V70l5 16h14l-3-18c-2-16-10-26-24-26z" fill="#fff" opacity=".95"/><circle cx="82" cy="80" r="10" fill="#17251b"/><path d="M82 70a10 10 0 010 20M74 76h16M76 86l6-12 6 12" stroke="#fff" stroke-width="1.6" fill="none"/></svg>';
 function renderCard(){
-  var t=tierOf(state.totalPt), card=$("pcard");
-  card.className="pcard "+t.cls;
+  var t=tierOf(state.totalPt), card=$("pcard"), rar=rarityOf(state.totalPt);
+  card.className="pcard "+t.cls+(rar.cls?" "+rar.cls:"");
+  $("cardRarity").textContent=rar.name?"✦ "+rar.name+" ✦":"";
   $("tierName").textContent=t.name;
   $("cardStage").textContent=t.stage;
   $("cardName").textContent=state.name;
@@ -495,7 +495,7 @@ function renderCard(){
   ABILITIES.forEach(function(a){
     var v=state.ab[a.id]||0;
     var d=document.createElement("div"); d.className="ab";
-    d.innerHTML='<div class="top"><span>'+a.icon+" "+a.name+'</span><span class="rank">'+rankOf(v)+'</span></div><div class="bar"><i style="width:'+Math.min(100, v/6)+'%"></i></div>';
+    d.innerHTML='<div class="top"><span>'+a.icon+" "+a.name+'</span><span class="rank">'+rankOf(v)+'</span></div><div class="bar"><i style="width:'+Math.min(100, v/25)+'%"></i></div>';
     box.appendChild(d);
   });
   var evo=$("evo"); evo.innerHTML="";
@@ -629,43 +629,6 @@ $("photoIn").addEventListener("change",function(ev){
 });
 $("photoDel").addEventListener("click",function(){ state.photo=""; renderAll(); toast("写真を消したよ"); });
 
-function toCSV(){
-  var lines=["type,date,practice,study,rest,pt,side,dash,jump,name,target"];
-  Object.keys(state.days).sort().forEach(function(k){ var d=state.days[k]; lines.push(["day",k,d.practice?1:0,d.study?1:0,d.rest?1:0,d.pt,"","","","",state.target].join(",")); });
-  state.measures.forEach(function(m){ lines.push(["measure",m.date,"","","",30,m.side||"",m.dash||"",m.jump||"","",state.target].join(",")); });
-  lines.push(["meta","","","","",state.totalPt,"","","",'"'+state.name.replace(/"/g,'""')+'"',state.target].join(","));
-  ABILITIES.forEach(function(a){ lines.push(["ability","","","","",state.ab[a.id]||0,"","","",a.id,""].join(",")); });
-  return lines.join("\n");
-}
-$("csvOut").addEventListener("click",function(){
-  var blob=new Blob(["\ufeff"+toCSV()],{type:"text/csv"});
-  var a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="player-card-quest-"+TODAYK+".csv"; document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(function(){URL.revokeObjectURL(a.href);},2000);
-  toast("CSVを書き出したよ。大事に保管してね");
-});
-$("csvIn").addEventListener("change",function(ev){
-  var f=ev.target.files[0]; if(!f) return;
-  var r=new FileReader();
-  r.onload=function(){
-    try{
-      var text=String(r.result).replace(/^\ufeff/,"");
-      var rows=text.split(/\r?\n/).filter(function(x){return x.trim();});
-      var ns={ name:"TAKERU", totalPt:0, ab:{}, days:{}, measures:[], target:0, photo:DEFAULT_PHOTO, stars:0, items:[], emblem:"", chestWeek:"", weekClearedEver:false };
-      ABILITIES.forEach(function(a){ ns.ab[a.id]=0; });
-      rows.slice(1).forEach(function(row){
-        var c=row.split(",");
-        if(c[0]==="day"){ ns.days[c[1]]={practice:c[2]==="1",study:c[3]==="1",rest:c[4]==="1",pt:parseInt(c[5],10)||0,done:{}}; if(parseInt(c[10],10)) ns.target=parseInt(c[10],10); }
-        else if(c[0]==="measure"){ ns.measures.push({date:c[1],side:c[6]?parseInt(c[6],10):null,dash:c[7]?parseFloat(c[7]):null,jump:c[8]?parseInt(c[8],10):null}); }
-        else if(c[0]==="meta"){ ns.totalPt=parseInt(c[5],10)||0; var nm=row.match(/"([^"]*)"/); if(nm) ns.name=nm[1]; if(parseInt(c[10],10)) ns.target=parseInt(c[10],10); }
-        else if(c[0]==="ability"){ ns.ab[c[9]]=parseInt(c[5],10)||0; }
-      });
-      // restore today's done flags from day pt is not possible; mark day types only
-      state=ns; renderAll(); toast("記録を読み込んだよ！続きから再開");
-    }catch(e){ toast("読み込みに失敗したよ。CSVを確認してね"); }
-  };
-  r.readAsText(f);
-  ev.target.value="";
-});
 
 function renderShop(){
   $("starBalance").textContent="⭐ "+state.stars;
