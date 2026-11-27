@@ -570,7 +570,9 @@ $("mSave").addEventListener("click",function(){
   else toast("測定を記録したよ（+30pt）📏");
 });
 $("renameBtn").addEventListener("click",function(){ var b=$("renameBox"); b.style.display=b.style.display==="none"?"block":"none"; });
-$("nameSave").addEventListener("click",function(){ var v=$("nameInput").value.trim(); if(v){ state.name=v.toUpperCase(); } $("renameBox").style.display="none"; renderAll(); toast("カードの名前を変えたよ"); });
+$("nameSave").addEventListener("click",function(){ var v=$("nameInput").value.trim(); if(v){ state.name=v.toUpperCase(); saveState(); } $("renameBox").style.display="none"; renderAll(); toast("カードの名前を変えて保存したよ ✔"); });
+document.addEventListener("visibilitychange",function(){ if(document.visibilityState==="hidden") saveState(); });
+window.addEventListener("pagehide",function(){ saveState(); });
 
 /* 写真：端末内で縮小して保存（外部送信なし）。切り抜きPNGは透明のまま、通常写真はJPEGにする */
 $("photoIn").addEventListener("change",function(ev){
