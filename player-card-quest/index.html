@@ -137,6 +137,10 @@ input[type=file]{display:none}
 footer{margin-top:18px;font-size:.75rem;color:var(--muted);text-align:center}
 .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(80px);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:99px;font-weight:800;font-size:.9rem;transition:transform .3s;z-index:60;max-width:92vw;text-align:center}
 .toast.show{transform:translateX(-50%) translateY(0)}
+/* tabs */
+.tabs{display:flex;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:6px;margin-bottom:16px;position:sticky;top:8px;z-index:40;box-shadow:var(--shadow)}
+.tabs button{flex:1;border:0;background:transparent;border-radius:10px;padding:9px 2px;font-weight:900;font-size:.82rem;color:var(--muted);min-height:44px}
+.tabs button.on{background:var(--green);color:#fff}
 </style>
 </head>
 <body>
@@ -153,9 +157,17 @@ footer{margin-top:18px;font-size:.75rem;color:var(--muted);text-align:center}
   <div class="xpbar" aria-hidden="true"><i id="xpFill"></i></div>
   <p class="xpnote" id="xpNote">次のレベルまで あと100pt</p>
 
+  <nav class="tabs" aria-label="ページ切り替え">
+    <button type="button" data-p="home">🏠 ホーム</button>
+    <button type="button" data-p="quest" class="on">🎯 クエスト</button>
+    <button type="button" data-p="result">📊 結果</button>
+    <button type="button" data-p="badge">🏅 バッジ</button>
+    <button type="button" data-p="item">🎁 アイテム</button>
+  </nav>
+
   <div class="grid">
     <div>
-      <section class="panel" aria-label="選手カード">
+      <section class="panel" data-page="home" aria-label="選手カード">
         <h2>🪪 選手カード <span class="tag">進化で姿が変わる</span></h2>
         <div class="pcard tier-bronze" id="pcard">
           <div class="row1">
@@ -184,12 +196,12 @@ footer{margin-top:18px;font-size:.75rem;color:var(--muted);text-align:center}
         </div>
       </section>
 
-      <section class="panel" style="margin-top:16px" aria-label="バッジ">
+      <section class="panel" style="margin-top:16px" data-page="badge" aria-label="バッジ">
         <h2>🏅 バッジ</h2>
         <div class="badges" id="badges"></div>
       </section>
 
-      <section class="panel" style="margin-top:16px" aria-label="アイテム">
+      <section class="panel" style="margin-top:16px" data-page="item" aria-label="アイテム">
         <h2>🎁 アイテム交換 <span class="tag" id="starBalance">⭐ 0</span></h2>
         <p class="note">スターは「レベルアップ +1」「週5日クリア +2」「測定で自己ベスト +1」でたまるよ。ためてエンブレムと交換すると、選手カードに付けられる。</p>
         <div id="shop"></div>
@@ -197,7 +209,7 @@ footer{margin-top:18px;font-size:.75rem;color:var(--muted);text-align:center}
     </div>
 
     <div>
-      <section class="panel" aria-label="今日のクエスト">
+      <section class="panel" data-page="quest" aria-label="今日のクエスト">
         <h2>🎯 きょうのクエスト <span class="tag">1つでもやれば記録される</span></h2>
         <p class="sec-label">⚽ 自主練（平日は合計15〜30分が目安）</p>
         <div id="practiceQuests"></div>
@@ -207,13 +219,13 @@ footer{margin-top:18px;font-size:.75rem;color:var(--muted);text-align:center}
         <p class="note" style="margin-top:8px">痛いところがある日は、無理せず「ケア（ストレッチ）」だけでもOK。やらない日があっても、カードが下がることはないよ。</p>
       </section>
 
-      <section class="panel" style="margin-top:16px" aria-label="今週の目標">
+      <section class="panel" style="margin-top:16px" data-page="result" aria-label="今週の目標">
         <h2>📆 今週の目標：5日やる</h2>
         <div class="weekdots" id="weekDots"></div>
         <p class="note" id="weekNote">あと5日で週目標クリア！</p>
       </section>
 
-      <section class="panel" style="margin-top:16px" aria-label="カレンダー">
+      <section class="panel" style="margin-top:16px" data-page="result" aria-label="カレンダー">
         <h2>🗓️ カレンダー</h2>
         <div class="cal-head">
           <button type="button" id="prevM" aria-label="前の月">◀</button>
@@ -229,7 +241,7 @@ footer{margin-top:18px;font-size:.75rem;color:var(--muted);text-align:center}
         </div>
       </section>
 
-      <section class="panel" style="margin-top:16px" aria-label="測定">
+      <section class="panel" style="margin-top:16px" data-page="quest" aria-label="測定">
         <h2>📏 月1回の測定 <span class="tag">比べるのは過去の自分</span></h2>
         <div class="mrow"><label for="mSide">反復横とび（20秒・回）</label><input id="mSide" type="number" inputmode="numeric" min="0" placeholder="回"></div>
         <div class="mrow"><label for="mDash">20m走（秒・小さいほど速い）</label><input id="mDash" type="number" inputmode="decimal" step="0.01" min="0" placeholder="秒"></div>
@@ -241,7 +253,7 @@ footer{margin-top:18px;font-size:.75rem;color:var(--muted);text-align:center}
         <svg id="mChart" viewBox="0 0 320 110" width="100%" height="110" style="margin-top:8px" aria-label="反復横とびの記録グラフ"></svg>
       </section>
 
-      <section class="panel" style="margin-top:16px" aria-label="記録の保存">
+      <section class="panel" style="margin-top:16px" data-page="home" aria-label="記録の保存">
         <h2>💾 記録の保存・引き継ぎ</h2>
         <p class="note">記録はこの端末に自動で保存されるので、ページを閉じても翌日続きから再開できます。万一に備えて、週1回はCSVで書き出して家族で保管してね。別の端末への引っ越しもCSVの読み込みでできます。</p>
         <div class="actions">
@@ -287,6 +299,8 @@ var QUESTS = [
   {id:"q_agility", type:"practice", icon:"🔀", name:"アジリティ 10分", desc:"ラダー風ステップ・方向転換・反復横とびの動き", pt:30, ab:"agility"},
   {id:"q_dash", type:"practice", icon:"💨", name:"ダッシュ＆体幹 10分", desc:"短いダッシュ数本＋プランクなどの体幹", pt:30, ab:"speed"},
   {id:"q_care", type:"practice", icon:"🧘", name:"ケアの日：ストレッチ 10分", desc:"疲れている日・痛い日はこちら。体を整えるのも練習", pt:20, ab:"stamina"},
+  {id:"q_pass", type:"practice", icon:"🎯", name:"壁あてパス＆トラップ 10分", desc:"壁に当てて、止める・はたく。両足でやろう", pt:30, ab:"pass"},
+  {id:"q_def", type:"practice", icon:"🛡️", name:"コーン守備ダッシュ 10分", desc:"目印を相手に見立てて、ダッシュで寄せる→止まる→横についていく→後ろに下がってターン", pt:30, ab:"defense"},
   {id:"q_homework", type:"study", icon:"✏️", name:"宿題を終わらせる", desc:"学校の宿題を全部やる", pt:30, ab:"study"},
   {id:"q_jigaku", type:"study", icon:"📖", name:"自学ノート 1ページ以上", desc:"漢字・計算・英語・読書メモなど、自分で決めた勉強", pt:30, ab:"study"}
 ];
@@ -670,6 +684,19 @@ function renderShop(){
 }
 function renderAll(){ renderStats(); renderCard(); renderQuests(); renderWeek(); renderCal(); renderBadges(); renderMeasures(); renderShop(); saveState(); }
 renderAll();
+})();
+</script>
+<script>
+(function(){
+  var tabs = document.querySelectorAll('.tabs button');
+  function show(p){
+    tabs.forEach(function(b){ b.classList.toggle('on', b.getAttribute('data-p') === p); });
+    document.querySelectorAll('section.panel[data-page]').forEach(function(s){
+      s.style.display = (s.getAttribute('data-page') === p) ? '' : 'none';
+    });
+  }
+  tabs.forEach(function(b){ b.addEventListener('click', function(){ show(b.getAttribute('data-p')); window.scrollTo(0, 0); }); });
+  show('quest');
 })();
 </script>
 </body>
